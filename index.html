@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';">
+    <title>Поместье Бабочки</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --black: #fffde7;
+            --dark: #fff9c4;
+            --gray: #fff176;
+            --light-gray: #ffeb3b;
+            --white: #4a3800;
+            --light: #6d4c00;
+            --accent: #c9a600;
+            --purple: #fbc02d;
+            --dark-purple: #f57f17;
+            --light-purple: #ffeb3b;
+            --moon-glow: #fff9c4;
+            --success: #fbc02d;
+            --blood-red: #c9a600;
+            --dark-red: #6d4c00;
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        #webgl-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            display: block;
+            pointer-events: none;
+        }
+
+        .server-info {
+            background: rgba(251, 192, 45, 0.18);
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(251, 192, 45, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: monospace;
+            font-size: 1.1em;
+            margin-top: 20px;
+            color: var(--dark-purple);
+            box-shadow: 0 2px 10px rgba(251, 192, 45, 0.25);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark) 50%, var(--gray) 100%);
+            color: var(--white);
+            min-height: 100vh;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(251, 192, 45, 0.06);
+            animation: float 20s infinite linear;
+        }
+
+        .bg-circle:nth-child(1) { width: 200px; height: 200px; top: 10%; left: 5%; animation-duration: 25s; }
+        .bg-circle:nth-child(2) { width: 150px; height: 150px; top: 70%; left: 80%; animation-duration: 20s; animation-delay: 5s; }
+        .bg-circle:nth-child(3) { width: 100px; height: 100px; top: 40%; left: 70%; animation-duration: 30s; animation-delay: 10s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+            25% { transform: translate(20px, 30px) rotate(90deg); opacity: 0.5; }
+            50% { transform: translate(40px, 10px) rotate(180deg); opacity: 0.2; }
+            75% { transform: translate(10px, 40px) rotate(270deg); opacity: 0.4; }
+            100% { transform: translate(0, 0) rotate(360deg); opacity: 0.3; }
+        }
+
+        .navbar {
+            background: rgba(255, 253, 231, 0.92);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(251, 192, 45, 0.3);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(251, 192, 45, 0.15);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.8em;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--purple), var(--dark-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #fbc02d, #ffeb3b, #f57f17);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 3s infinite;
+            border: 2px solid rgba(251, 192, 45, 0.6);
+        }
+
+        .logo-icon i {
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 0 12px rgba(251, 192, 45, 0.6);
+            font-size: 1.3em;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 192, 45, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(251, 192, 45, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 192, 45, 0); }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-link {
+            color: var(--dark-purple);
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav-link:hover {
+            background: rgba(251, 192, 45, 0.12);
+            border-color: rgba(251, 192, 45, 0.4);
+            color: var(--dark-purple);
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            background: rgba(251, 192, 45, 0.18);
+            border-color: var(--purple);
+            color: var(--dark-purple);
+            box-shadow: 0 5px 15px rgba(251, 192, 45, 0.25);
+        }
+
+        .section {
+            display: none;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero {
+            text-align: center;
+            padding: 100px 0 80px;
+        }
+
+        .hero h1 {
+            font-size: 4em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, var(--dark-purple), var(--purple), var(--light-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(251, 192, 45, 0.4);
+        }
+
+        .hero p {
+            font-size: 1.3em;
+            color: var(--light);
+            max-width: 700px;
+            margin: 0 auto 40px;
+        }
+
+        .feature-card,
+        .rank-card,
+        .rule-card,
+        .member-card,
+        .activity-item,
+        .honor-card {
+            position: relative;
+            z-index: 1;
+            transition: var(--transition);
+            overflow: hidden;
+        }
+
+        .feature-card::before,
+        .rank-card::before,
+        .rule-card::before,
+        .member-card::before,
+        .activity-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(251, 192, 45, 0.12), transparent);
+            transition: left 0.7s ease;
+            z-index: -1;
+        }
+
+        .feature-card:hover::before,
+        .rank-card:hover::before,
+        .rule-card:hover::before,
+        .member-card:hover::before,
+        .activity-item:hover::before {
+            left: 100%;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin: 80px 0;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            padding: 40px 30px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(251, 192, 45, 0.25);
+            text-align: center;
+            color: var(--dark-purple);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #fbc02d, #ffeb3b, #f57f17);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 2em;
+            animation: pulse 3s infinite;
+            border: 2px solid rgba(251, 192, 45, 0.6);
+            transition: var(--transition);
+        }
+
+        .feature-card h3 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, var(--dark-purple), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: var(--transition);
+        }
+
+        .feature-card p {
+            color: var(--light);
+            margin-bottom: 25px;
+            line-height: 1.7;
+            transition: var(--transition);
+        }
+
+        .feature-button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: rgba(251, 192, 45, 0.12);
+            color: var(--dark-purple);
+            text-decoration: none;
+            border-radius: 25px;
+            border: 1px solid rgba(251, 192, 45, 0.4);
+            font-weight: 600;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .feature-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(251, 192, 45, 0.25), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .feature-button:hover::before {
+            left: 100%;
+        }
+
+        .section-title {
+            font-size: 2.5em;
+            margin-bottom: 50px;
+            text-align: center;
+            background: linear-gradient(45deg, var(--dark-purple), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .ranks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin: 60px 0;
+        }
+
+        .rank-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            padding: 35px 30px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(251, 192, 45, 0.25);
+            color: var(--dark-purple);
+        }
+
+        .rank-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(45deg, #fbc02d, #ffeb3b, #f57f17);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            animation: pulse 3s infinite;
+            border: 2px solid rgba(251, 192, 45, 0.6);
+            transition: var(--transition);
+        }
+
+        .rank-title {
+            font-size: 1.6em;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, var(--dark-purple), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: var(--transition);
+        }
+
+        .rank-points {
+            font-size: 2.2em;
+            font-weight: 700;
+            color: var(--dark-purple);
+            margin-bottom: 10px;
+            text-shadow: 0 0 15px rgba(251, 192, 45, 0.4);
+            transition: var(--transition);
+        }
+
+        .rank-cooldown {
+            color: var(--purple);
+            font-weight: 600;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--dark-purple);
+            padding-left: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: var(--transition);
+        }
+
+        .rank-card p {
+            color: var(--light);
+            line-height: 1.7;
+            transition: var(--transition);
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(251, 192, 45, 0.12);
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #fbc02d, #ffeb3b, #f57f17);
+            border-radius: 4px;
+            width: 0;
+            transition: width 1.5s ease-in-out, box-shadow 0.3s ease;
+        }
+
+        .activities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .activity-item {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 4px solid var(--dark-purple);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--dark-purple);
+        }
+
+        .activity-name {
+            font-weight: 600;
+            color: var(--dark-purple);
+            flex: 1;
+            font-size: 1.1em;
+            transition: var(--transition);
+        }
+
+        .activity-points {
+            color: var(--dark-purple);
+            font-weight: 700;
+            font-size: 1.3em;
+            background: rgba(251, 192, 45, 0.12);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(251, 192, 45, 0.25);
+            min-width: 100px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .honors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .honor-card {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(251, 192, 45, 0.25);
+            color: var(--dark-purple);
+        }
+
+        .honor-card.special {
+            border-color: var(--purple);
+            background: rgba(251, 192, 45, 0.12);
+        }
+
+        .honor-title {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: var(--dark-purple);
+            transition: var(--transition);
+        }
+
+        .honor-cost {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--purple);
+            transition: var(--transition);
+        }
+
+        .honor-cost.free {
+            color: #c9a600;
+        }
+
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin: 60px 0;
+        }
+
+        .rule-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            padding: 35px 30px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(251, 192, 45, 0.25);
+            color: var(--dark-purple);
+        }
+
+        .rule-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(45deg, #fbc02d, #ffeb3b, #f57f17);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            animation: pulse 3s infinite;
+            border: 2px solid rgba(251, 192, 45, 0.6);
+            transition: var(--transition);
+        }
+
+        .rule-title {
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, var(--dark-purple), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: var(--transition);
+        }
+
+        .rule-list {
+            list-style: none;
+            color: var(--light);
+        }
+
+        .rule-list li {
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .rule-list li:before {
+            content: '•';
+            position: absolute;
+            left: 10px;
+            color: var(--purple);
+            font-weight: bold;
+        }
+
+        .team-structure {
+            margin: 60px 0;
+        }
+
+        .team-category {
+            margin-bottom: 60px;
+        }
+
+        .category-title {
+            font-size: 2.2em;
+            margin-bottom: 40px;
+            text-align: center;
+            background: linear-gradient(45deg, var(--dark-purple), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+        }
+
+        .category-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--purple), transparent);
+        }
+
+        .members-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            justify-content: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .member-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            padding: 30px 25px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(251, 192, 45, 0.25);
+            text-align: center;
+            position: relative;
+            color: var(--dark-purple);
+        }
+
+        .member-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #fbc02d, #ffeb3b, #f57f17);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2em;
+            border: 2px solid rgba(251, 192, 45, 0.6);
+            animation: pulse 3s infinite;
+            transition: var(--transition);
+        }
+
+        .member-rank {
+            color: var(--purple);
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+            transition: var(--transition);
+        }
+
+        .member-name {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, var(--dark-purple), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: var(--transition);
+        }
+
+        .member-role {
+            color: var(--light);
+            font-size: 0.95em;
+            line-height: 1.4;
+            transition: var(--transition);
+        }
+
+        .member-card.vacant {
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px dashed rgba(251, 192, 45, 0.4);
+        }
+
+        .member-card.vacant .member-avatar {
+            background: linear-gradient(45deg, #ccc, #ddd);
+            border-color: rgba(251, 192, 45, 0.2);
+        }
+
+        .member-card.vacant .member-name {
+            color: var(--accent);
+            -webkit-text-fill-color: var(--accent);
+            background: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 40px;
+            border-top: 1px solid rgba(251, 192, 45, 0.3);
+            color: var(--purple);
+        }
+
+        .theme-switcher {
+            display: flex;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px;
+            border-radius: 20px;
+            border: 1px solid rgba(251, 192, 45, 0.25);
+            margin-left: 30px;
+            margin-right: 10px;
+        }
+
+        .theme-btn {
+            background: transparent;
+            border: none;
+            color: var(--dark-purple);
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-btn.active {
+            background: rgba(251, 192, 45, 0.25);
+            color: var(--purple);
+        }
+
+        .theme-btn .fa-sun {
+            color: #ffeb3b;
+        }
+
+        .theme-btn .fa-moon {
+            color: #c9a600;
+        }
+
+        .theme-btn.active .fa-sun {
+            color: #fbc02d;
+            text-shadow: 0 0 8px rgba(251, 192, 45, 0.4);
+        }
+
+        .theme-btn.active .fa-moon {
+            color: #f57f17;
+            text-shadow: 0 0 8px rgba(245, 127, 23, 0.4);
+        }
+
+        .theme-btn:hover .fa-sun {
+            color: #fbc02d;
+            transform: scale(1.1);
+        }
+
+        .theme-btn:hover .fa-moon {
+            color: #f57f17;
+            transform: scale(1.1);
+        }
+
+        [data-theme="dark"] {
+            --black: #3e3000;
+            --dark: #4e3e00;
+            --gray: #5e4e00;
+            --light-gray: #6e5e00;
+            --white: #fffde7;
+            --light: #fff9c4;
+            --accent: #ffeb3b;
+            --purple: #fbc02d;
+            --dark-purple: #f57f17;
+            --light-purple: #ffeb3b;
+            --moon-glow: #fff9c4;
+            --success: #fbc02d;
+            --blood-red: #c9a600;
+            --dark-red: #6d4c00;
+        }
+
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #3e3000 0%, #4e3e00 50%, #5e4e00 100%);
+            color: #fffde7;
+        }
+
+        [data-theme="dark"] .navbar {
+            background: rgba(78, 62, 0, 0.95) !important;
+            border-bottom: 1px solid var(--purple) !important;
+            box-shadow: 0 4px 20px rgba(251, 192, 45, 0.3);
+        }
+
+        [data-theme="dark"] .logo {
+            background: linear-gradient(45deg, #fffde7, #ffeb3b, #fbc02d) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+
+        [data-theme="dark"] .feature-card,
+        [data-theme="dark"] .rank-card,
+        [data-theme="dark"] .rule-card,
+        [data-theme="dark"] .member-card,
+        [data-theme="dark"] .form-container {
+            background: rgba(94, 78, 0, 0.9) !important;
+            border: 1px solid var(--purple) !important;
+            box-shadow: 0 8px 32px rgba(251, 192, 45, 0.2) !important;
+            color: #fffde7 !important;
+        }
+
+        [data-theme="dark"] .nav-link {
+            background: rgba(110, 94, 0, 0.5) !important;
+            border: 1px solid rgba(251, 192, 45, 0.3) !important;
+            color: #fffde7 !important;
+        }
+
+        [data-theme="dark"] .nav-link.active {
+            background: rgba(251, 192, 45, 0.3) !important;
+            border-color: var(--purple) !important;
+            color: #fffde7 !important;
+        }
+
+        [data-theme="dark"] .hero h1,
+        [data-theme="dark"] .section-title,
+        [data-theme="dark"] .page-header h1,
+        [data-theme="dark"] .category-title {
+            color: #fffde7 !important;
+            text-shadow: 0 0 20px rgba(251, 192, 45, 0.5) !important;
+            background: linear-gradient(45deg, #fffde7, #ffeb3b, #fbc02d) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+
+        [data-theme="dark"] .feature-card h3,
+        [data-theme="dark"] .rank-title,
+        [data-theme="dark"] .rule-title,
+        [data-theme="dark"] .member-name {
+            color: #fffde7 !important;
+            background: linear-gradient(45deg, #fffde7, #ffeb3b) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+
+        [data-theme="dark"] .hero p,
+        [data-theme="dark"] .feature-card p,
+        [data-theme="dark"] .rank-card p,
+        [data-theme="dark"] .rule-card p,
+        [data-theme="dark"] .member-role,
+        [data-theme="dark"] .rule-list li {
+            color: #fff9c4 !important;
+        }
+
+        [data-theme="dark"] .server-info {
+            background: rgba(251, 192, 45, 0.2);
+            border: 1px solid rgba(251, 192, 45, 0.5);
+            color: #fffde7;
+        }
+
+        [data-theme="dark"] .rank-points {
+            color: #ffeb3b !important;
+            text-shadow: 0 0 10px rgba(251, 192, 45, 0.6);
+        }
+
+        [data-theme="dark"] .rank-cooldown {
+            color: #ffeb3b !important;
+            border-left-color: #fbc02d !important;
+        }
+
+        [data-theme="dark"] .feature-button,
+        [data-theme="dark"] .submit-button {
+            background: linear-gradient(135deg, #6d4c00, #c9a600, #ffeb3b) !important;
+            color: #fffde7 !important;
+            border: 1px solid #fbc02d !important;
+        }
+
+        [data-theme="dark"] .activity-name,
+        [data-theme="dark"] .activity-points,
+        [data-theme="dark"] .honor-title,
+        [data-theme="dark"] .honor-cost,
+        [data-theme="dark"] .member-rank {
+            color: #fff9c4 !important;
+        }
+
+        [data-theme="dark"] .footer {
+            color: #ffeb3b !important;
+        }
+
+        [data-theme="dark"] .activity-item {
+            background: rgba(94, 78, 0, 0.9) !important;
+            border-left: 4px solid #fbc02d !important;
+            color: #fffde7 !important;
+        }
+
+        [data-theme="dark"] .activity-points {
+            background: rgba(251, 192, 45, 0.25) !important;
+            border: 1px solid rgba(251, 192, 45, 0.6) !important;
+            color: #ffeb3b !important;
+        }
+
+        [data-theme="dark"] .honor-card {
+            background: rgba(94, 78, 0, 0.9) !important;
+            color: #fffde7 !important;
+        }
+
+        [data-theme="dark"] .member-rank {
+            color: #ffeb3b !important;
+        }
+
+        [data-theme="dark"] .member-card.vacant .member-name {
+            color: #ffeb3b !important;
+            -webkit-text-fill-color: #ffeb3b !important;
+        }
+
+        [data-theme="dark"] .rank-icon,
+        [data-theme="dark"] .feature-icon,
+        [data-theme="dark"] .rule-icon,
+        [data-theme="dark"] .member-avatar {
+            background: linear-gradient(45deg, #6d4c00, #c9a600, #ffeb3b) !important;
+            border: 2px solid rgba(251, 192, 45, 0.7) !important;
+            box-shadow: 0 0 15px rgba(251, 192, 45, 0.5);
+        }
+
+        [data-theme="dark"] .logo-icon {
+            background: linear-gradient(45deg, #6d4c00, #c9a600, #ffeb3b) !important;
+            border: 2px solid rgba(251, 192, 45, 0.7) !important;
+            box-shadow: 0 0 15px rgba(251, 192, 45, 0.5);
+        }
+
+        [data-theme="dark"] .progress-bar {
+            background: linear-gradient(90deg, #6d4c00, #c9a600, #ffeb3b) !important;
+            box-shadow: 0 0 10px rgba(251, 192, 45, 0.4);
+        }
+
+        [data-theme="dark"] .rank-icon,
+        [data-theme="dark"] .feature-icon,
+        [data-theme="dark"] .rule-icon,
+        [data-theme="dark"] .member-avatar,
+        [data-theme="dark"] .logo-icon {
+            animation: yellowPulse 3s infinite;
+        }
+
+        @keyframes yellowPulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 192, 45, 0.5); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(251, 192, 45, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 192, 45, 0); }
+        }
+
+        [data-theme="dark"] .theme-switcher {
+            background: rgba(94, 78, 0, 0.9) !important;
+            border: 1px solid rgba(251, 192, 45, 0.7) !important;
+            box-shadow: 0 4px 15px rgba(251, 192, 45, 0.25);
+        }
+
+        [data-theme="dark"] .theme-btn {
+            color: #fff9c4 !important;
+        }
+
+        [data-theme="dark"] .theme-btn.active {
+            background: linear-gradient(135deg, rgba(251, 192, 45, 0.5), rgba(245, 127, 23, 0.4)) !important;
+            color: #fffde7 !important;
+            border: 1px solid rgba(251, 192, 45, 0.9) !important;
+            box-shadow: 0 0 20px rgba(251, 192, 45, 0.4);
+        }
+
+        [data-theme="dark"] .theme-btn:hover:not(.active) {
+            background: rgba(110, 94, 0, 0.8) !important;
+            border: 1px solid rgba(251, 192, 45, 0.6) !important;
+            color: #fffde7 !important;
+            transform: scale(1.05);
+        }
+
+        [data-theme="dark"] .theme-btn .fa-sun { color: #fff9c4 !important; }
+        [data-theme="dark"] .theme-btn .fa-moon { color: #ffeb3b !important; }
+        [data-theme="dark"] .theme-btn.active .fa-sun { color: #fffde7 !important; text-shadow: 0 0 10px rgba(255, 253, 231, 0.6); }
+        [data-theme="dark"] .theme-btn.active .fa-moon { color: #fbc02d !important; text-shadow: 0 0 10px rgba(251, 192, 45, 0.6); }
+        [data-theme="dark"] .theme-btn:hover .fa-sun { color: #fffde7 !important; }
+        [data-theme="dark"] .theme-btn:hover .fa-moon { color: #fbc02d !important; }
+
+        .feature-card:hover,
+        .rank-card:hover,
+        .rule-card:hover,
+        .member-card:not(.vacant):hover,
+        .honor-card:hover {
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 25px rgba(251, 192, 45, 0.35), 0 15px 40px rgba(251, 192, 45, 0.15) !important;
+            transform: translateY(-15px) scale(1.03);
+            background: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        .activity-item:hover {
+            border-left-color: var(--purple) !important;
+            box-shadow: 5px 0 20px rgba(251, 192, 45, 0.25), 0 8px 25px rgba(251, 192, 45, 0.15) !important;
+            transform: translateX(15px) scale(1.02);
+            background: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        .feature-card:hover h3,
+        .rank-card:hover .rank-title,
+        .rule-card:hover .rule-title,
+        .member-card:not(.vacant):hover .member-name {
+            text-shadow: 0 0 15px rgba(251, 192, 45, 0.6);
+            background: linear-gradient(45deg, #fbc02d, #ffeb3b, #f57f17) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+
+        .activity-item:hover .activity-name,
+        .activity-item:hover .activity-points {
+            text-shadow: 0 0 10px rgba(251, 192, 45, 0.5);
+        }
+
+        .activity-item:hover .activity-points {
+            background: rgba(251, 192, 45, 0.25) !important;
+            border-color: var(--purple) !important;
+            transform: scale(1.15);
+            box-shadow: 0 0 15px rgba(251, 192, 45, 0.25) !important;
+        }
+
+        .feature-card:hover .feature-icon,
+        .rank-card:hover .rank-icon,
+        .rule-card:hover .rule-icon,
+        .member-card:not(.vacant):hover .member-avatar {
+            background: linear-gradient(45deg, #fbc02d, #ffeb3b, #f57f17) !important;
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 25px rgba(251, 192, 45, 0.5), inset 0 0 20px rgba(251, 192, 45, 0.15) !important;
+            animation: pulseGlow 2s infinite;
+        }
+
+        .rank-card:hover .rank-points,
+        .honor-card:hover .honor-cost {
+            text-shadow: 0 0 12px rgba(251, 192, 45, 0.5);
+            transform: scale(1.05);
+        }
+
+        .rank-card:hover .progress-bar {
+            box-shadow: 0 0 12px rgba(251, 192, 45, 0.4) !important;
+        }
+
+        .member-card.vacant:hover {
+            border-color: rgba(251, 192, 45, 0.5) !important;
+            box-shadow: 0 0 20px rgba(251, 192, 45, 0.2) !important;
+            transform: translateY(-8px);
+        }
+
+        [data-theme="dark"] .feature-card:hover,
+        [data-theme="dark"] .rank-card:hover,
+        [data-theme="dark"] .rule-card:hover,
+        [data-theme="dark"] .member-card:not(.vacant):hover,
+        [data-theme="dark"] .honor-card:hover {
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 35px rgba(251, 192, 45, 0.55), 0 20px 50px rgba(245, 127, 23, 0.45) !important;
+            transform: translateY(-18px) scale(1.04);
+            background: linear-gradient(135deg, rgba(110, 94, 0, 0.95), rgba(126, 110, 0, 0.85)) !important;
+        }
+
+        [data-theme="dark"] .activity-item:hover {
+            border-left-color: var(--purple) !important;
+            box-shadow: 5px 0 25px rgba(251, 192, 45, 0.35), 0 10px 35px rgba(245, 127, 23, 0.35) !important;
+            transform: translateX(18px) scale(1.03);
+            background: linear-gradient(135deg, rgba(110, 94, 0, 0.9), rgba(126, 110, 0, 0.8)) !important;
+        }
+
+        [data-theme="dark"] .feature-card:hover h3,
+        [data-theme="dark"] .rank-card:hover .rank-title,
+        [data-theme="dark"] .rule-card:hover .rule-title,
+        [data-theme="dark"] .member-card:not(.vacant):hover .member-name,
+        [data-theme="dark"] .member-card:not(.vacant):hover .member-rank {
+            text-shadow: 0 0 20px rgba(251, 192, 45, 0.7);
+            background: linear-gradient(45deg, #fffde7, #ffeb3b, #fbc02d) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+
+        [data-theme="dark"] .activity-item:hover .activity-name,
+        [data-theme="dark"] .activity-item:hover .activity-points {
+            text-shadow: 0 0 12px rgba(251, 192, 45, 0.6);
+        }
+
+        [data-theme="dark"] .activity-item:hover .activity-points {
+            background: linear-gradient(135deg, #6d4c00, #c9a600) !important;
+            border-color: var(--purple) !important;
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(251, 192, 45, 0.5) !important;
+            color: #fffde7 !important;
+        }
+
+        [data-theme="dark"] .feature-card:hover .feature-icon,
+        [data-theme="dark"] .rank-card:hover .rank-icon,
+        [data-theme="dark"] .rule-card:hover .rule-icon,
+        [data-theme="dark"] .member-card:not(.vacant):hover .member-avatar {
+            background: linear-gradient(45deg, #c9a600, #ffeb3b, #fffde7) !important;
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 35px rgba(251, 192, 45, 0.7), inset 0 0 25px rgba(251, 192, 45, 0.25) !important;
+            animation: yellowPulseGlow 1.5s infinite;
+        }
+
+        [data-theme="dark"] .rank-card:hover .rank-points,
+        [data-theme="dark"] .honor-card:hover .honor-cost {
+            text-shadow: 0 0 15px rgba(251, 192, 45, 0.8);
+            transform: scale(1.08);
+            color: #fffde7 !important;
+        }
+
+        [data-theme="dark"] .rank-card:hover .progress-bar {
+            background: linear-gradient(90deg, #c9a600, #ffeb3b, #fffde7) !important;
+            box-shadow: 0 0 20px rgba(251, 192, 45, 0.5) !important;
+        }
+
+        [data-theme="dark"] .member-card.vacant:hover {
+            border-color: rgba(251, 192, 45, 0.7) !important;
+            box-shadow: 0 0 25px rgba(251, 192, 45, 0.3) !important;
+            transform: translateY(-10px);
+            background: rgba(126, 110, 0, 0.7) !important;
+        }
+
+        .nav-link:hover {
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 20px rgba(251, 192, 45, 0.35) !important;
+            text-shadow: 0 0 8px rgba(251, 192, 45, 0.6);
+            background: rgba(251, 192, 45, 0.18) !important;
+        }
+
+        [data-theme="dark"] .nav-link:hover {
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 25px rgba(251, 192, 45, 0.45) !important;
+            text-shadow: 0 0 10px rgba(251, 192, 45, 0.7);
+            background: linear-gradient(135deg, rgba(251, 192, 45, 0.35), rgba(245, 127, 23, 0.25)) !important;
+        }
+
+        .feature-button:hover,
+        .booking-button:hover {
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 20px rgba(251, 192, 45, 0.45), 0 8px 25px rgba(251, 192, 45, 0.15) !important;
+            text-shadow: 0 0 8px rgba(251, 192, 45, 0.6);
+            background: rgba(251, 192, 45, 0.25) !important;
+            transform: translateY(-5px);
+        }
+
+        [data-theme="dark"] .feature-button:hover,
+        [data-theme="dark"] .booking-button:hover {
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 25px rgba(251, 192, 45, 0.55), 0 10px 30px rgba(245, 127, 23, 0.45) !important;
+            text-shadow: 0 0 10px rgba(251, 192, 45, 0.8);
+            background: linear-gradient(135deg, #c9a600, #ffeb3b, #fffde7) !important;
+            transform: translateY(-5px);
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(251, 192, 45, 0.35), inset 0 0 15px rgba(251, 192, 45, 0.15); }
+            50% { transform: scale(1.07); box-shadow: 0 0 30px rgba(251, 192, 45, 0.55), inset 0 0 20px rgba(251, 192, 45, 0.25); }
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(251, 192, 45, 0.35), inset 0 0 15px rgba(251, 192, 45, 0.15); }
+        }
+
+        @keyframes yellowPulseGlow {
+            0% { transform: scale(1); box-shadow: 0 0 25px rgba(251, 192, 45, 0.45), inset 0 0 20px rgba(251, 192, 45, 0.15); }
+            50% { transform: scale(1.08); box-shadow: 0 0 40px rgba(251, 192, 45, 0.7), inset 0 0 25px rgba(251, 192, 45, 0.35); }
+            100% { transform: scale(1); box-shadow: 0 0 25px rgba(251, 192, 45, 0.45), inset 0 0 20px rgba(251, 192, 45, 0.15); }
+        }
+
+        .logo:hover .logo-icon {
+            animation: butterflyRotate 4s infinite linear;
+        }
+
+        @keyframes butterflyRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .logo:hover .logo-icon i {
+            animation: butterflyGlow 3s infinite alternate ease-in-out;
+        }
+
+        @keyframes butterflyGlow {
+            0% { transform: scale(0.95); opacity: 0.9; text-shadow: 0 0 5px rgba(251, 192, 45, 0.5); }
+            100% { transform: scale(1.05); opacity: 1; text-shadow: 0 0 15px rgba(251, 192, 45, 0.8); }
+        }
+
+        .note-block {
+            background: rgba(255, 253, 231, 0.8);
+            border-left: 5px solid var(--purple);
+            padding: 25px 30px;
+            border-radius: 16px;
+            margin: 50px 0 30px;
+            color: var(--dark-purple);
+            font-size: 1.15em;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 192, 45, 0.3);
+            box-shadow: 0 8px 25px rgba(251, 192, 45, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: var(--transition);
+        }
+
+        .note-block i {
+            font-size: 1.8em;
+            color: var(--purple);
+        }
+
+        .note-block:hover {
+            border-color: var(--purple);
+            box-shadow: 0 12px 30px rgba(251, 192, 45, 0.2);
+            transform: translateY(-3px);
+        }
+
+        [data-theme="dark"] .note-block {
+            background: rgba(94, 78, 0, 0.85) !important;
+            border-left: 5px solid #fbc02d !important;
+            color: #fffde7 !important;
+            border-color: rgba(251, 192, 45, 0.5) !important;
+        }
+
+        [data-theme="dark"] .note-block i {
+            color: #ffeb3b !important;
+        }
+
+        .subpage-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 25px;
+            background: rgba(255, 253, 231, 0.7);
+            padding: 15px;
+            border-radius: 50px;
+            border: 1px solid var(--border, rgba(251, 192, 45, 0.3));
+            box-shadow: 0 8px 20px rgba(251, 192, 45, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .subpage-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: 2px solid var(--purple);
+            border-radius: 40px;
+            font-weight: 600;
+            color: var(--dark-purple);
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            font-size: 0.95rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .subpage-tab:hover {
+            background: rgba(251, 192, 45, 0.15);
+            color: var(--dark-purple);
+            border-color: var(--dark-purple);
+        }
+
+        .subpage-tab.active {
+            background: var(--purple);
+            color: white;
+            border-color: var(--purple);
+        }
+
+        .subpage-content {
+            background: rgba(255, 255, 255, 0.75);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(251, 192, 45, 0.1);
+            border: 1px solid rgba(251, 192, 45, 0.25);
+            min-height: 300px;
+            color: var(--dark-purple);
+            backdrop-filter: blur(15px);
+        }
+
+        .subpage-content h4 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, var(--dark-purple), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subpage-content h5 {
+            font-size: 1.2em;
+            margin: 25px 0 12px;
+            color: var(--purple);
+            border-left: 5px solid var(--purple);
+            padding-left: 15px;
+        }
+
+        .recipe-block {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed rgba(251, 192, 45, 0.3);
+        }
+        .recipe-block:last-child {
+            border-bottom: none;
+        }
+        .recipe-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--dark-purple);
+            margin-bottom: 8px;
+        }
+        .recipe-sub {
+            font-weight: 600;
+            color: var(--purple);
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        .recipe-list {
+            list-style-type: decimal;
+            padding-left: 25px;
+            color: var(--light);
+        }
+        .recipe-list li {
+            margin-bottom: 8px;
+        }
+        .note {
+            font-style: italic;
+            color: var(--dark-purple);
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        [data-theme="dark"] .subpage-tabs {
+            background: rgba(94, 78, 0, 0.8) !important;
+            border-color: rgba(251, 192, 45, 0.5) !important;
+        }
+        [data-theme="dark"] .subpage-tab {
+            color: #fff9c4 !important;
+            border-color: #fbc02d !important;
+        }
+        [data-theme="dark"] .subpage-tab:hover {
+            background: rgba(251, 192, 45, 0.2) !important;
+            color: #fffde7 !important;
+        }
+        [data-theme="dark"] .subpage-tab.active {
+            background: #fbc02d !important;
+            color: white !important;
+        }
+        [data-theme="dark"] .subpage-content {
+            background: rgba(94, 78, 0, 0.85) !important;
+            border-color: rgba(251, 192, 45, 0.5) !important;
+            color: #fffde7 !important;
+        }
+        [data-theme="dark"] .subpage-content h4,
+        [data-theme="dark"] .subpage-content h5,
+        [data-theme="dark"] .recipe-title,
+        [data-theme="dark"] .recipe-sub,
+        [data-theme="dark"] .recipe-list,
+        [data-theme="dark"] .note {
+            color: #fffde7 !important;
+            -webkit-text-fill-color: #fffde7 !important;
+            background: none !important;
+        }
+        [data-theme="dark"] .subpage-content h4 {
+            background: linear-gradient(45deg, #fffde7, #ffeb3b) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+        [data-theme="dark"] .subpage-content h5 {
+            border-left-color: #fbc02d !important;
+            color: #ffeb3b !important;
+        }
+        [data-theme="dark"] .recipe-block {
+            border-bottom-color: rgba(251, 192, 45, 0.3) !important;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5em; }
+            .nav-container { flex-direction: column; gap: 20px; }
+            .nav-links { flex-wrap: wrap; justify-content: center; }
+            .features-grid,
+            .ranks-grid,
+            .activities-grid,
+            .rules-grid,
+            .members-grid,
+            .honors-grid { grid-template-columns: 1fr; }
+            .feature-card,
+            .rank-card,
+            .rule-card { padding: 30px 20px; }
+            .feature-icon { width: 70px; height: 70px; font-size: 1.8em; }
+            .category-title { font-size: 1.8em; }
+            .member-card:not(.vacant):hover,
+            [data-theme="dark"] .member-card:not(.vacant):hover { transform: translateY(-8px) scale(1.01) !important; }
+            .member-card.vacant:hover,
+            [data-theme="dark"] .member-card.vacant:hover { transform: translateY(-3px) scale(1.01) !important; }
+            .activity-item:hover { transform: translateX(8px) scale(1.01) !important; }
+            .logo-icon { width: 40px; height: 40px; }
+            .logo-icon i { font-size: 1.1em; }
+            .logo { font-size: 1.4em; gap: 10px; }
+            .theme-switcher { margin: 10px 0; }
+            .subpage-tabs { overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start; border-radius: 30px; }
+        }
+
+        @media (max-width: 480px) {
+            .nav-link { padding: 10px 15px; font-size: 0.9em; }
+            .hero { padding: 60px 0 40px; }
+            .hero h1 { font-size: 2em; }
+            .section-title { font-size: 2em; }
+            .member-card { padding: 25px 20px; }
+            .logo-icon { width: 35px; height: 35px; }
+            .logo-icon i { font-size: 1em; }
+            .logo { font-size: 1.2em; gap: 8px; }
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .page-header h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, var(--dark-purple), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-header p {
+            color: var(--light);
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 1.2em;
+        }
+
+        .member-card:not(.vacant) {
+            position: relative;
+        }
+
+        .member-card:not(.vacant)::after {
+            content: '✓';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(135deg, var(--purple), #ffeb3b);
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(251, 192, 45, 0.6), 0 2px 4px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(251, 192, 45, 0.8);
+            z-index: 10;
+            transition: var(--transition);
+        }
+
+        .member-card:not(.vacant):hover::after {
+            background: linear-gradient(135deg, #ffeb3b, var(--purple));
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(251, 192, 45, 0.8), 0 3px 6px rgba(0, 0, 0, 0.4);
+            border: 1px solid #ffeb3b;
+        }
+
+        .member-card:not(.vacant):hover .member-avatar {
+            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(251, 192, 45, 0.6) !important;
+        }
+
+        .member-card:not(.vacant):hover .member-name {
+            background: linear-gradient(45deg, var(--purple), #ffeb3b, var(--purple)) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+
+        .member-card:not(.vacant):hover .member-rank {
+            color: var(--purple) !important;
+            text-shadow: 0 0 10px rgba(251, 192, 45, 0.4) !important;
+        }
+
+        .member-card.vacant:hover {
+            transform: translateY(-5px) scale(1.02);
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: 2px dashed var(--purple) !important;
+            box-shadow: 0 0 20px rgba(251, 192, 45, 0.25) !important;
+        }
+
+        [data-theme="dark"] .member-card:not(.vacant)::after {
+            background: linear-gradient(135deg, #FFFFFF, #FFFDE7) !important;
+            color: #f57f17 !important;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.6), 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .member-card:not(.vacant):hover::after {
+            background: linear-gradient(135deg, #FFFFFF, #FFFFFF) !important;
+            color: #c9a600 !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 3px 6px rgba(0, 0, 0, 0.4);
+            border: 1px solid #FFFFFF;
+        }
+
+        [data-theme="dark"] .member-card:not(.vacant):hover {
+            background: linear-gradient(135deg, rgba(110, 94, 0, 0.95), rgba(126, 110, 0, 0.85)) !important;
+            border: 1px solid #fbc02d !important;
+            transform: translateY(-15px) scale(1.02) !important;
+            z-index: 100 !important;
+            box-shadow: 0 20px 50px rgba(251, 192, 45, 0.45), 0 0 30px rgba(201, 166, 0, 0.35) !important;
+        }
+
+        [data-theme="dark"] .member-card:not(.vacant):hover .member-avatar {
+            box-shadow: 0 0 25px rgba(251, 192, 45, 0.6), 0 0 15px rgba(201, 166, 0, 0.5) !important;
+            border-color: rgba(201, 166, 0, 0.9) !important;
+        }
+
+        [data-theme="dark"] .member-card:not(.vacant):hover .member-name {
+            background: linear-gradient(45deg, #fbc02d, #fff9c4, #fbc02d) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+        }
+
+        [data-theme="dark"] .member-card:not(.vacant):hover .member-rank {
+            color: #fffde7 !important;
+            text-shadow: 0 0 10px rgba(201, 166, 0, 0.5) !important;
+        }
+
+        [data-theme="dark"] .member-card.vacant:hover {
+            background: rgba(110, 94, 0, 0.7) !important;
+            border: 2px dashed rgba(201, 166, 0, 0.9) !important;
+            box-shadow: 0 0 20px rgba(201, 166, 0, 0.25) !important;
+            transform: translateY(-5px) scale(1.02);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="webgl-canvas"></canvas>
+    <div class="bg-animation">
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="showSection('main')">
+                <div class="logo-icon">
+                    <i class="fas fa-feather-alt"></i>
+                </div>
+                ПОМЕСТЬЕ БАБОЧКИ
+            </div>
+            <div class="nav-links">
+                <div class="nav-link active" onclick="showSection('main')"><i class="fas fa-home"></i> Главная</div>
+                <div class="nav-link" onclick="showSection('lectures')"><i class="fas fa-chalkboard-teacher"></i> Лекции</div>
+                <div class="nav-link" onclick="showSection('treatment')"><i class="fas fa-first-aid"></i> Лечение</div>
+                <div class="nav-link" onclick="showSection('cooking')"><i class="fas fa-utensils"></i> Готовка</div>
+                <div class="nav-link" onclick="showSection('medicine')"><i class="fas fa-pills"></i> Лекарства</div>
+                <div class="nav-link" onclick="showSection('bombs')"><i class="fas fa-bomb"></i> Бомбы</div>
+                <div class="nav-link" onclick="showSection('kakushi')"><i class="fas fa-user-nurse"></i> Какуши</div>
+                <div class="nav-link" onclick="showSection('gunshinrib')"><i class="fas fa-brain"></i> Гуншинрибу</div>
+            </div>
+            <div class="theme-switcher">
+                <button class="theme-btn active" data-theme="light"><i class="fas fa-sun"></i></button>
+                <button class="theme-btn" data-theme="dark"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="main" class="section active">
+            <section class="hero">
+                <h1>ПОМЕСТЬЕ БАБОЧКИ</h1>
+                <p>Медицинский центр и оплот знаний корпуса истребителей демонов. Здесь вы найдёте лекции, рецепты лекарств, инструкции по лечению и многое другое.</p>
+                <div class="server-info">
+                    <i class="fas fa-server"></i>
+                    <span>s5.yufu.su:27017</span>
+                </div>
+            </section>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                    <h3>Лекции</h3>
+                    <p>Обучающие материалы по первой помощи, реанимации, ядам и униформе.</p>
+                    <div class="feature-button" onclick="showSection('lectures')">Читать лекции</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-first-aid"></i></div>
+                    <h3>Лечение</h3>
+                    <p>Инструкции по лечению ожогов, переломов, ран и отравлений.</p>
+                    <div class="feature-button" onclick="showSection('treatment')">Смотреть лечение</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-utensils"></i></div>
+                    <h3>Готовка</h3>
+                    <p>Рецепты и кулинарные традиции поместья бабочки.</p>
+                    <div class="feature-button" onclick="showSection('cooking')">Смотреть рецепты</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-pills"></i></div>
+                    <h3>Лекарства</h3>
+                    <p>Изготовление мазей, настоек, отваров и ядов.</p>
+                    <div class="feature-button" onclick="showSection('medicine')">Смотреть лекарства</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-bomb"></i></div>
+                    <h3>Бомбы</h3>
+                    <p>Рецепты и применение специальных бомб против демонов.</p>
+                    <div class="feature-button" onclick="showSection('bombs')">Смотреть бомбы</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-user-nurse"></i></div>
+                    <h3>Какуши</h3>
+                    <p>Информация для вспомогательного персонала.</p>
+                    <div class="feature-button" onclick="showSection('kakushi')">Смотреть какуши</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-brain"></i></div>
+                    <h3>Гуншинрибу</h3>
+                    <p>Отдел военно-психологической поддержки.</p>
+                    <div class="feature-button" onclick="showSection('gunshinrib')">Смотреть отдел</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="lectures" class="section">
+            <div class="page-header">
+                <h1>Лекции</h1>
+                <p>Обучающие материалы и лекции для членов поместья.</p>
+            </div>
+            <div class="subpage-tabs" id="lectures-tabs">
+                <div class="subpage-tab active" data-sub="firstaid">Первая мед. помощь</div>
+                <div class="subpage-tab" data-sub="cpr">Сердечно-легочная реанимация</div>
+                <div class="subpage-tab" data-sub="poisons">Яды</div>
+                <div class="subpage-tab" data-sub="fracture_lecture">Переломы</div>
+                <div class="subpage-tab" data-sub="uniform">Униформа истребителей</div>
+            </div>
+            <div class="subpage-content" id="lectures-content"></div>
+        </div>
+
+        <div id="treatment" class="section">
+            <div class="page-header">
+                <h1>Лечение</h1>
+                <p>Медицинские процедуры и инструкции по лечению.</p>
+            </div>
+            <div class="subpage-tabs" id="treatment-tabs">
+                <div class="subpage-tab active" data-sub="burns">Ожоги</div>
+                <div class="subpage-tab" data-sub="fractures">Переломы</div>
+                <div class="subpage-tab" data-sub="wounds">Раны</div>
+                <div class="subpage-tab" data-sub="poisoning">Отравление</div>
+                <div class="subpage-tab" data-sub="frostbite">Обморожение</div>
+                <div class="subpage-tab" data-sub="instruments">Мед. инструменты</div>
+            </div>
+            <div class="subpage-content" id="treatment-content"></div>
+        </div>
+
+        <div id="cooking" class="section">
+            <div class="page-header">
+                <h1>Готовка</h1>
+                <p>Рецепты и кулинарные традиции поместья.</p>
+            </div>
+            <div class="subpage-tabs" id="cooking-tabs">
+                <div class="subpage-tab active" data-sub="fav">Любимые блюда столпов</div>
+                <div class="subpage-tab" data-sub="snacks">Закуски и легкие блюда</div>
+                <div class="subpage-tab" data-sub="soups">Супы и похлебки</div>
+                <div class="subpage-tab" data-sub="sweets">Сладости</div>
+                <div class="subpage-tab" data-sub="drinks">Напитки</div>
+            </div>
+            <div class="subpage-content" id="cooking-content"></div>
+        </div>
+
+        <div id="medicine" class="section">
+            <div class="page-header">
+                <h1>Лекарства</h1>
+                <p>Изготовление лекарственных средств и ядов.</p>
+            </div>
+            <div class="subpage-tabs" id="medicine-tabs">
+                <div class="subpage-tab active" data-sub="ointments">Мази</div>
+                <div class="subpage-tab" data-sub="tinctures">Настойки</div>
+                <div class="subpage-tab" data-sub="decoctions">Отвары</div>
+                <div class="subpage-tab" data-sub="poisons">Яды</div>
+            </div>
+            <div class="subpage-content" id="medicine-content"></div>
+        </div>
+
+        <div id="bombs" class="section">
+            <div class="page-header">
+                <h1>Бомбы</h1>
+                <p>Рецепты и применение специальных бомб против демонов.</p>
+            </div>
+            <div class="subpage-tabs" id="bombs-tabs">
+                <div class="subpage-tab active" data-sub="tears">Слёзы глицинии</div>
+                <div class="subpage-tab" data-sub="withering">Дыхание увядания</div>
+                <div class="subpage-tab" data-sub="nightpoison">Яд цветущей ночи</div>
+                <div class="subpage-tab" data-sub="lullaby">Колыбельная бабочки</div>
+            </div>
+            <div class="subpage-content" id="bombs-content"></div>
+        </div>
+
+        <div id="kakushi" class="section">
+            <div class="page-header">
+                <h1>Какуши</h1>
+                <p>Информация для вспомогательного персонала.</p>
+            </div>
+            <div class="subpage-tabs" id="kakushi-tabs">
+                <div class="subpage-tab active" data-sub="dresscode">Дресс-код</div>
+                <div class="subpage-tab" data-sub="promotion">Система повышения</div>
+                <div class="subpage-tab" data-sub="atarashi">Атараши</div>
+            </div>
+            <div class="subpage-content" id="kakushi-content"></div>
+        </div>
+
+        <div id="gunshinrib" class="section">
+            <div class="page-header">
+                <h1>Гуншинрибу</h1>
+                <p>Отдел военно-психологической поддержки.</p>
+            </div>
+            <div class="subpage-tabs" id="gunshinrib-tabs">
+                <div class="subpage-tab active" data-sub="general">Общее понятие</div>
+                <div class="subpage-tab" data-sub="duty">Дежурство</div>
+                <div class="subpage-tab" data-sub="cognitive">Виды когнитивных нарушений</div>
+                <div class="subpage-tab" data-sub="ptsd">Посттравматическое стрессовое расстройство</div>
+                <div class="subpage-tab" data-sub="operative">Памятка для оперативников</div>
+                <div class="subpage-tab" data-sub="clinical">Памятка для клинических психологов</div>
+                <div class="subpage-tab" data-sub="security">Формы допуска секретности</div>
+                <div class="subpage-tab" data-sub="inspection">Осмотр учеников после отбора</div>
+            </div>
+            <div class="subpage-content" id="gunshinrib-content"></div>
+        </div>
+
+        <div class="footer">
+            <div class="container">
+                <p>2025 Поместье Бабочки | s5.yufu.su:27017 | by whiteprince</p>
+                <p style="margin-top: 10px; font-size: 0.9em;">Знания • Забота • Исцеление</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const pages = {
+            main: document.getElementById('main'),
+            lectures: document.getElementById('lectures'),
+            treatment: document.getElementById('treatment'),
+            cooking: document.getElementById('cooking'),
+            medicine: document.getElementById('medicine'),
+            bombs: document.getElementById('bombs'),
+            kakushi: document.getElementById('kakushi'),
+            gunshinrib: document.getElementById('gunshinrib')
+        };
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        function showSection(sectionId) {
+            Object.values(pages).forEach(p => p.classList.remove('active'));
+            if (pages[sectionId]) {
+                pages[sectionId].classList.add('active');
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('onclick')?.includes(sectionId)) link.classList.add('active');
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                history.pushState({page: sectionId}, '', `#${sectionId}`);
+                activateFirstSubtab(sectionId);
+            }
+        }
+
+        function activateFirstSubtab(pageId) {
+            const tabsContainer = document.querySelector(`#${pageId}-tabs`);
+            if (!tabsContainer) return;
+            const tabs = tabsContainer.querySelectorAll('.subpage-tab');
+            if (tabs.length > 0) {
+                tabs.forEach(t => t.classList.remove('active'));
+                tabs[0].classList.add('active');
+                updateSubpageContent(pageId, tabs[0].dataset.sub);
+            }
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const onclick = this.getAttribute('onclick');
+                const match = onclick?.match(/'([^']+)'/);
+                if (match) showSection(match[1]);
+            });
+        });
+
+        window.addEventListener('load', () => {
+            const hash = location.hash.substring(1);
+            if (hash && pages[hash]) showSection(hash);
+            else showSection('main');
+        });
+
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.page) showSection(e.state.page);
+            else showSection('main');
+        });
+
+        const subpageConfigs = [
+            { page: 'treatment', tabsId: 'treatment-tabs', contentId: 'treatment-content', subpages: {
+                burns: 'Ожоги', fractures: 'Переломы', wounds: 'Раны', poisoning: 'Отравление', frostbite: 'Обморожение', instruments: 'Медицинские инструменты'
+            }},
+            { page: 'lectures', tabsId: 'lectures-tabs', contentId: 'lectures-content', subpages: {
+                firstaid: 'Первая мед. помощь', cpr: 'Сердечно-легочная реанимация', poisons: 'Яды', fracture_lecture: 'Переломы', uniform: 'Униформа истребителей'
+            }},
+            { page: 'cooking', tabsId: 'cooking-tabs', contentId: 'cooking-content', subpages: {
+                fav: 'Любимые блюда столпов', snacks: 'Закуски и легкие блюда', soups: 'Супы и похлебки', sweets: 'Сладости', drinks: 'Напитки'
+            }},
+            { page: 'medicine', tabsId: 'medicine-tabs', contentId: 'medicine-content', subpages: {
+                ointments: 'Мази', tinctures: 'Настойки', decoctions: 'Отвары', poisons: 'Яды'
+            }},
+            { page: 'bombs', tabsId: 'bombs-tabs', contentId: 'bombs-content', subpages: {
+                tears: 'Слёзы глицинии', withering: 'Дыхание увядания', nightpoison: 'Яд цветущей ночи', lullaby: 'Колыбельная бабочки'
+            }},
+            { page: 'kakushi', tabsId: 'kakushi-tabs', contentId: 'kakushi-content', subpages: {
+                dresscode: 'Дресс-код', promotion: 'Система повышения', atarashi: 'Атараши'
+            }},
+            { page: 'gunshinrib', tabsId: 'gunshinrib-tabs', contentId: 'gunshinrib-content', subpages: {
+                general: 'Общее понятие', duty: 'Дежурство', cognitive: 'Виды когнитивных нарушений', ptsd: 'Посттравматическое стрессовое расстройство', operative: 'Памятка для оперативников', clinical: 'Памятка для клинических психологов', security: 'Формы допуска секретности', inspection: 'Осмотр учеников после отбора'
+            }}
+        ];
+
+        function updateSubpageContent(pageId, subKey) {
+            const config = subpageConfigs.find(c => c.page === pageId);
+            if (!config) return;
+            const contentDiv = document.getElementById(config.contentId);
+            const subName = config.subpages[subKey] || subKey;
+            let html = `<h4>${subName}</h4>`;
+
+            if (pageId === 'treatment' && subKey === 'burns') {
+                html = `<h4>Виды ожогов и их лечение</h4><div class="recipe-block"><div class="recipe-title">Химический ожог</div><p>Химический ожог — это повреждение тканей организма (кожи, слизистых оболочек, глаз, пищевода), вызванное воздействием агрессивных химических веществ.</p><ul><li><strong>Кислоты</strong> вызывают коагуляционный некроз (сухой ожог). Они сворачивают белки, образуя плотный струп (корку), который препятствует дальнейшему проникновению вещества вглубь.</li><li><strong>Щелочи</strong> вызывают колликвационный некроз (влажный ожог). Они омыляют жиры и растворяют белки, не образуя плотной корки, и проникают очень глубоко в ткани, поэтому такие ожоги считаются более опасными.</li></ul><p><strong>Способ лечения при поражении плоти (кожи)</strong></p><ol class="recipe-list"><li>Осмотреть участок повреждения. Если он под одеждой, снять одежду, но не с места раны (она могла приклеиться).</li><li>Отрезать кусок ткани, если она срослась с кожей, стряхнуть химикат (если порошок), промыть кожу проточной водой около 10 раз.</li><li>Ввести обезболивающее, затем скальпелем срезать поврежденный участок вместе с одеждой, двигаясь от краёв к центру.</li><li>Обработать рану, наложить стерильную повязку.</li></ol><p><strong>При поражении слизистых</strong> — обильное промывание водой (от носа к виску), при порошках — сухое удаление, затем обезболивающие капли и сухая повязка.</p></div><div class="recipe-block"><div class="recipe-title">Термический ожог</div><p>Термический ожог — это повреждение тканей, возникающее в результате воздействия высоких температур...</p><p><strong>Способ лечения ожога 1-2 степени:</strong></p><ol class="recipe-list"><li>Поместить обожженную часть тела под прохладную проточную воду на 15–20 минут. <em>Нельзя использовать лед.</em></li><li>Аккуратно промыть рану мыльной водой или антисептиком.</li><li>Если есть волдырь с жидкостью (только 2 степень ожога!) необходимо подрезать аккуратно волдырь и дать вытечь жидкости. Наложить влажную стерильную повязку.</li><li>При необходимости дать человеку выпить обезболивающее.</li></ol><p><strong>Способ лечения ожога 3-4 степени:</strong></p><ol class="recipe-list"><li>Ввести дозу обезболивающего, после чего с помощью скальпеля срезать омертвевшие ткани.</li><li>Удаление нежизнеспособных тканей (под наркозом), чтобы рана начала заживать.</li><li>Подключить капельницы с физраствором и питательными веществами.</li><li><em>4 степень ожога подразумевает собой критическую рану, которую невозможно вылечить (в случае чего ампутация конечности).</em></li></ol></div><div class="recipe-block"><div class="recipe-title">Электрический ожог</div><p>Электрический ожог — это повреждение тканей, вызванное прохождением электрического тока через тело человека...</p><p><strong>Способ лечения места поражения (Метки тока):</strong></p><ol class="recipe-list"><li>При небольших и неглубоких метках обработать рану антисептиками, удалить омертвевшие ткани и наложить асептическую (стерильную) повязку.</li><li>Поскольку ожог имеет сухой характер, под ним может скапливаться гной или отторгаться ткань, потому их требуется сначала вскрыть, а потом повторить действия из пункта 1.</li><li>Если поражение обширное, требуется пластика кожи.</li></ol><p><strong>Системное (общее) лечение:</strong></p><ol class="recipe-list"><li>Если ток прошел через мышцы, они разрушаются. Продукты распада забивают почки. Чтобы этого избежать, вводят большие объемы жидкости и специальные растворы.</li><li>Ввести человеку обезболивающее.</li><li>Узнать какой степени ожог, после чего провести операцию согласно регламенту "термического ожога".</li></ol></div><div class="recipe-block"><div class="recipe-title">Солнечный ожог</div><p>Солнечный ожог — это повреждение кожи ультрафиолетом. Обычно это ожог 1-й или 2-й степени.</p><p><strong>Способ лечения солнечного ожога:</strong></p><ol class="recipe-list"><li>Отправить человека принимать прохладный (не ледяной!) душ или ванну в течение 10–15 минут.</li><li>После душа нанесите увлажняющее средство.</li><li>Пить чистую воду, чтобы восполнить потерю жидкости, можно выдать таблетку для понижения температуры тела и обезболивающее.</li><li>Если ожог 2 степени, то провести операцию согласно регламенту "термического ожога".</li></ol></div>`;
+            } else if (pageId === 'treatment' && subKey === 'fractures') {
+                html = `<h4>Лечение переломов всех видов</h4><h5>1. Первичный осмотр (Диагностика)</h5><ol class="recipe-list"><li>Вам надо установить, какой вид перелома, после чего определить тактику лечения.</li><li><strong>Закрытый перелом:</strong> Кожа не повреждена, но есть отек, гематома, деформация конечности.</li><li><strong>Открытый перелом:</strong> Есть рана, в которой видна кость или ее осколки. Кровотечение.</li><li><strong>Перелом со смещением:</strong> Конечность выглядит неестественно.</li><li><strong>Трещина (перелом без смещения):</strong> Боль есть, отек небольшой, но двигать конечностью (с трудом) можно. Наложить плотный бинт или гипс.</li></ol><h5>2. Репозиция (Сопоставление отломков)</h5><ol class="recipe-list"><li><strong>Без смещения (трещина):</strong> Репозиция не требуется.</li><li><strong>Со смещением:</strong> Требуется вправление кости (под наркозом/обезболиванием).</li><li><strong>Перелом с наличием осколков:</strong> Если кость раздроблена, требуется операция.</li></ol><h5>3. Фиксация</h5><ol class="recipe-list"><li><strong>Гипс:</strong> Накладывается на срок от 2 до 6 недель (30-60 минут реального времени). Развести воду и гипс в равных пропорциях, закрепив бинт, который будете облепливать гипсом.</li><li><strong>Хирургическая операция (Остеосинтез):</strong> Ввести человека в наркозный сон и обработать зону антисептиком, после чего разрезать продолговато ткань для доступа к костям. Если есть осколки, удалить пинцетом, если смещение — вправить кость или зафиксировать титановыми пластинами и болтами.</li><li>Вытереть участок, зашить человека, обработать антисептиком вокруг шва и наложить стерильную повязку.</li></ol><h5>4. Антибиотики (Только для открытых переломов)</h5><p>Назначается курс антибиотиков, чтобы не допустить заражения крови.</p><h5>5. Снятие гипса и внутренних пластин</h5><ol class="recipe-list"><li>Проверить, как срослась кость. Если всё в порядке, выполнить обратные действия и снять пластины, зашив человека обратно.</li><li>Снять гипс и проверить, как срослась кость.</li></ol>`;
+            } else if (pageId === 'treatment' && subKey === 'wounds') {
+                html = `<h4>Раны и первая помощь</h4><h5>Состав аптечки для ПМП</h5><ul><li>Перчатки и маски</li><li>Антисептик - Йод, зелёнка, бутылёк со спиртом, дистиллированная вода</li><li>Жгут для фиксации сосудов</li><li>Средства для перевязки – вата, бинт стерильный и эластичный, пластырь, марля</li><li>Ножницы, пинцет, несколько шприцов, градусник</li><li>Пантенол (Противоожоговое/ранозаживляющее средство)</li><li>Обезболивающее/жаропонижающее средство</li><li>Спазмолитики</li><li>Средства от кишечных расстройств - активированный уголь</li><li>Капли в нос увлажняющие и сосудосуживающие</li><li>Бутылёк с сиропом алтеи и раствором календулы</li><li>Сильнодействующие обезболивающие</li><li>Сердечные препараты</li><li>Мазь календулы</li><li>Антигистаминные препараты при аллергии</li><li>Нашатырь</li></ul><h5>Оказание первой помощи</h5><p>Перед тем, как начать оказание первой мед. помощи, нужно убедиться, что вам и раненому ничего не угрожает.</p><h5>Резаная рана (С кровотечением/без)</h5><ol class="recipe-list"><li>Надеть перчатки с маской</li><li>В зависимости от места ранения, снять с истребителя форму</li><li>Обработать рану спиртом</li><li>Перебинтовать место раны</li><li>Отнести пациента в поместье</li></ol><h5>Колотая рана (С кровотечением/без)</h5><p>Действия аналогичны резаной ране.</p><h5>Артериальное кровотечение</h5><ol class="recipe-list"><li>Надеть перчатки с маской</li><li>Оголить место</li><li>Обильно обработать рану спиртом</li><li>Наложить марлю</li><li>Отнести пациента в поместье</li></ol><h5>Венозное кровотечение</h5><ol class="recipe-list"><li>Надеть перчатки с маской</li><li>Оголить место</li><li>Обработать рану спиртом</li><li>Туго перебинтовать место</li><li>Отнести пациента в поместье</li></ol><h5>Ожог</h5><ol class="recipe-list"><li>Надеть перчатки с маской</li><li>Оголить место</li><li>Нанести мазь на бинт и перебинтовать место ожога</li><li>Отнести пациента в поместье</li></ol><h5>Огнестрельные раны</h5><ol class="recipe-list"><li>Обработать рану спиртом, перебинтовать</li><li>Наложить шину</li><li>Отнести пациента в поместье</li></ol><h5>Перелом</h5><ol class="recipe-list"><li>Зафиксировать конечность</li><li>Отнести пациента в поместье</li></ol><h5>Ушибы/Синяки</h5><ol class="recipe-list"><li>Обработать мазью</li></ol>`;
+            } else if (pageId === 'treatment' && subKey === 'instruments') {
+                html = `<h4>Медицинские инструменты</h4><h5>Хирургические инструменты</h5><ul><li><strong>Скальпель</strong> – Основной инструмент для разрезов.</li><li><strong>Хирургические ножницы</strong> – Для рассечения тканей, бинтов, нитей.</li><li><strong>Щипцы и пинцеты</strong> – Для удержания тканей, удаления инородных тел.</li><li><strong>Иглы и держатели игл</strong> – Для наложения швов.</li></ul><h5>Диагностические инструменты</h5><ul><li><strong>Стетоскоп</strong></li><li><strong>Ртутный термометр</strong></li><li><strong>Тонометр</strong></li><li><strong>Перкуссионный молоточек</strong></li></ul><h5>Перевязочные и вспомогательные инструменты</h5><ul><li><strong>Бинты и марля</strong></li><li><strong>Стеклянные шприцы</strong></li><li><strong>Металлические лотки и ёмкости</strong></li><li><strong>Антисептические растворы</strong></li></ul>`;
+            } else if (pageId === 'treatment' && subKey === 'poisoning') {
+                html = `<h4>Отравление</h4><div class="recipe-block"><div class="recipe-title">| Степень (лёгкое)</div><p>Пострадавшему давали выпить большое количество теплой воды с солью или раствором горчицы, после чего вызывали рвоту. Затем внутрь принимали толченый древесный уголь, смешанный с водой.</p></div><div class="recipe-block"><div class="recipe-title">|| Степень (средняя)</div><p>Помимо промывания желудка применяли закрепляющие и обволакивающие средства: отвары из коры дуба или корня лапчатки. Для защиты слизистой давали пить сырой яичный белок, разведенный в воде.</p></div><div class="recipe-block"><div class="recipe-title">||| Степень (тяжёлая)</div><p>При тяжелых отравлениях лечение было направлено на поддержание жизни. В ход шли сильнодействующие растительные противоядия: при укусах змей к ране прикладывали припарки из растертого чеснока. В крайних случаях пытались делать искусственное дыхание.</p></div>`;
+            } else if (pageId === 'treatment' && subKey === 'frostbite') {
+                html = `<h4>Обморожение</h4><div class="recipe-block"><div class="recipe-title">| Степень</div><p>Главной задачей было бережное согревание. Конечность старались согреть теплом тела другого человека или помещали в прохладную, а затем постепенно теплеющую воду. После восстановления кровообращения кожу смазывали легкими маслами.</p></div><div class="recipe-block"><div class="recipe-title">|| Степень</div><p>Пузыри вскрывали с большой осторожностью, используя прокаленные на огне иглы. После удаления жидкости на рану накладывали припарки из толченых листьев подорожника.</p></div><div class="recipe-block"><div class="recipe-title">||| Степень</div><p>К почерневшим участкам могли прикладывать припарки из жженых моллюсков или древесной золы, смешанной с маслом, чтобы ускорить отторжение омертвевшей ткани. Главным же методом была хирургия: при развитии гангрены проводили ампутацию.</p></div>`;
+            } else if (pageId === 'lectures' && subKey === 'firstaid') {
+                html = `<h4>Первая медицинская помощь (ПМП)</h4><p>Первая медицинская помощь — это немедленные действия, направленные на сохранение жизни пострадавшего до прибытия врача.</p><h5>Основные цели ПМП</h5><ol class="recipe-list"><li>Сохранить жизнь.</li><li>Предотвратить ухудшение состояния.</li><li>Подготовить пострадавшего к дальнейшему лечению.</li></ol><h5>Общий порядок действий</h5><ol class="recipe-list"><li><strong>Оценка обстановки</strong></li><li><strong>Оценка состояния пострадавшего</strong></li><li><strong>Остановка угрозы жизни</strong></li></ol><h5>Основные виды ПМП</h5><ul><li><strong>Кровотечение:</strong> Прижмите рану тканью или бинтом. Наложите давящую повязку.</li><li><strong>Ранения:</strong> Очистить кожу вокруг раны. Наложить чистую повязку.</li><li><strong>Переломы:</strong> Обездвижить повреждённую часть тела.</li><li><strong>Ожоги:</strong> Охладить место ожога прохладной водой. Наложить сухую стерильную повязку.</li><li><strong>Потеря сознания:</strong> Уложить пострадавшего. Проверить дыхание.</li></ul><p class="note">От ваших действий зависят минуты, а иногда и вся жизнь человека.</p>`;
+            } else if (pageId === 'lectures' && subKey === 'cpr') {
+                html = `<h4>Сердечно-лёгочная реанимация</h4><p>Сердечно-лёгочная реанимация — это действия, направленные на возвращение дыхания и сердечной деятельности у человека, находящегося без сознания.</p><h5>Когда необходимо начинать</h5><ol class="recipe-list"><li>Пострадавший не реагирует на обращение.</li><li>Дыхание отсутствует или едва уловимо.</li><li>Пульс не прощупывается.</li></ol><h5>Порядок действий</h5><ol class="recipe-list"><li><strong>Обеспечить безопасность</strong></li><li><strong>Проверка состояния</strong></li><li><strong>Подготовка</strong> — уложить пострадавшего на твёрдую поверхность.</li><li><strong>Надавливания на грудную клетку</strong> — выполнять 30 сильных и ритмичных надавливаний.</li><li><strong>Искусственное дыхание</strong> — после надавливаний сделать 2 глубоких вдоха рот-ко-рту.</li><li><strong>Повторение цикла</strong> — чередовать 30 надавливаний и 2 вдоха без остановки.</li></ol>`;
+            } else if (pageId === 'lectures' && subKey === 'poisons') {
+                html = `<h4>Яды и их применение против демонов</h4><div class="recipe-block"><div class="recipe-title">Концентрированный экстракт глицинии (Фудзи-доку)</div><p>Это основа клинков и отравленных снарядов Истребителей. Глициния смертельна для демонов.</p><p><strong>Что нужно для создания:</strong> Лепестки и кору глицинии вымачивают в рисовом уксусе в течение нескольких лунных циклов. Полученную жижу перегоняют через медные трубки.</p><p><strong>Применение:</strong> Им пропитывают сталь клинков или вводят прямо в тело демона через специальные полые иглы.</p></div><div class="recipe-block"><div class="recipe-title">Порошок сушеной глицинии</div><p>Используется для создания ловушек и засад.</p><p><strong>Что нужно для создания:</strong> Цветы глицинии сушат в полной темноте, перетирают в пыль и смешивают с толчеными костями угря.</p><p><strong>Применение:</strong> Распыляется в воздухе. При вдохе демоном поражает легкие и замедляет регенерацию на несколько минут.</p></div><div class="recipe-block"><div class="recipe-title">Корень аконита (Торикабуто) в смеси с медным купоросом</div><p>Аконит сам по себе вызывает паралич нервной системы у людей, а для демонов он блокирует сигналы мозга к регенерации конечностей. Медь не дает ране затягиваться.</p><p><strong>Что нужно для создания:</strong> Корень аконита варят в сакэ до выпаривания алкоголя, затем добавляют стружку меди и настаивают в глиняном горшке, закопанном в землю, 50 дней.</p><p><strong>Применение:</strong> Наносится на зазубрины клинка. При попадании в кровь демон чувствует, будто его конечности налились свинцом.</p></div><div class="recipe-block"><div class="recipe-title">Ядовитая слюна сороконожки (Мукадэ) с порошком жгучего перца</div><p>Основан на страхе перед сороконожками в японском фольклоре.</p><p><strong>Что нужно для создания:</strong> Гигантских сороконожек заставляют кусать кусок сырой говядины, пропитывая его ядом. Затем мясо сжигают, а золу смешивают с жгучим перцем.</p><p><strong>Применение:</strong> Этот состав вызывает у демонов нестерпимый зуд и жжение на месте раны.</p></div>`;
+            } else if (pageId === 'lectures' && subKey === 'fracture_lecture') {
+                html = `<h4>Переломы</h4><p>Перелом — это нарушение целостности кости вследствие удара, падения или боевого повреждения.</p><h5>Виды переломов</h5><ul><li><strong>Закрытый</strong> — кожа не повреждена</li><li><strong>Открытый</strong> — кость или её обломки повреждают кожу</li><li><strong>Со смещением</strong> — обломки кости сдвинуты</li><li><strong>Множественный</strong> — повреждено несколько костей</li></ul><h5>Признаки перелома</h5><ul><li>резкая боль, усиливающаяся при движении</li><li>деформация конечности</li><li>отёк, кровоподтёки</li><li>невозможность опоры или движения</li><li>при открытом переломе — видимая кость и кровотечение</li></ul><h5>Первая помощь при переломах</h5><ol class="recipe-list"><li><strong>Обеспечение покоя</strong></li><li><strong>Остановка кровотечения (если есть)</strong></li><li><strong>Обездвиживание</strong> — зафиксировать повреждённую кость, захватить суставы выше и ниже перелома.</li><li><strong>При открытом переломе</strong> — не вправлять кость, накрыть рану стерильной повязкой.</li><li><strong>Уменьшение боли</strong></li></ol><h5>Чего делать нельзя</h5><ul><li>Вправлять кость самостоятельно</li><li>Резко выпрямлять конечность</li><li>Перевозить пострадавшего без фиксации</li><li>Игнорировать боль и отёк</li></ul><h5>Транспортировка</h5><ul><li>Перемещать пострадавшего только после фиксации</li><li>При переломах позвоночника — переносить на жёсткой поверхности</li><li>Следить за сознанием и дыханием</li></ul>`;
+            } else if (pageId === 'lectures' && subKey === 'uniform') {
+                html = `<h4>Униформа истребителей демонов</h4><p>Униформа истребителей демонов — это не просто одежда. Она создаётся так, чтобы одновременно обеспечивать защиту, удобство в бою и свободу движений.</p><h5>Основная задача униформы</h5><p>Одежда должна выдерживать резкие движения, контакт с оружием и длительные переходы.</p><h5>Материалы для изготовления</h5><ul><li>плотный хлопок или смесовая ткань</li><li>усиленные волокна</li><li>подкладочные материалы</li></ul><h5>Стандартная униформа истребителя</h5><ul><li><strong>Рубашка</strong></li><li><strong>Брюки</strong></li><li><strong>Пояс или ремень</strong></li><li><strong>Хаори (накидка)</strong></li></ul><h5>Процесс пошива</h5><ol class="recipe-list"><li>Снятие мерок.</li><li>Подготовка выкройки.</li><li>Раскрой ткани.</li><li>Сшивание деталей.</li><li>Усиление швов.</li><li>Установка застёжек.</li><li>Финальная примерка.</li></ol><h5>Уход за униформой</h5><ul><li>регулярно очищать форму от грязи и крови</li><li>сушить ткань в проветриваемом месте</li><li>проверять швы после тяжёлых боёв</li><li>при повреждениях сразу проводить ремонт</li></ul>`;
+            } else if (pageId === 'cooking' && subKey === 'fav') {
+                html = `<h4>Любимые блюда столпов</h4>
+                <div class="recipe-block"><div class="recipe-title">Кеджуро Ренгоку</div><div class="recipe-sub">Сладкий картофельный мисо-суп</div><ol class="recipe-list"><li>В кастрюле обжарьте лук до мягкости. Добавьте чеснок и имбирь.</li><li>Добавьте нарезанный кубиками батат. Залейте овощным бульоном и варите 15-20 минут до мягкости.</li><li>Смешайте пару ложек бульона с пастой мисо до растворения комочков. Вылейте смесь обратно в суп.</li><li>С помощью венчика превратите суп в однородную кремовую массу.</li><li>Разлейте суп по тарелкам, украсьте зеленью.</li></ol></div>
+                <div class="recipe-block"><div class="recipe-title">Гию Томиока</div><div class="recipe-sub">Тушеный лосось с редисом</div><ol class="recipe-list"><li>Лук нарежьте мелким кубиком. Чеснок измельчите. Редис нарежьте кружочками. Филе лосося нарежьте порционными кусками, посолите и поперчите.</li><li>В глубокой сковороде растопите сливочное масло. Обжарьте лук до мягкости. Добавьте чеснок и готовьте еще минуту.</li><li>Выложите в сковороду нарезанный редис. Готовьте, помешивая, до легкой карамелизации.</li><li>Влейте в сковороду сливки, доведите до слабого кипения. Аккуратно выложите кусочки лосося в сливочный соус. Убавьте огонь до минимума, накройте крышкой и тушите 10-15 минут.</li><li>Рыба должна стать непрозрачной и легко разделяться на волокна. Выключите огонь, при желании сбрызните лимонным соком. Подавайте, посыпав рубленой зеленью.</li></ol></div>
+                <div class="recipe-block"><div class="recipe-title">Шинобу Кочо</div><div class="recipe-sub">Цукудани с имбирем</div><ol class="recipe-list"><li>Пластинки нори нарежьте тонкой соломкой. Имбирь натрите на мелкой терке.</li><li>В кастрюлю влейте сакэ и соевый соус, добавьте сахар. Отправьте туда же нарезанные нори и имбирь.</li><li>Поставьте кастрюлю на средний огонь. Когда смесь начнет закипать, увеличьте огонь. После закипания убавьте огонь до минимума и варите до выпаривания жидкости.</li><li>Готовую закуску переложите в пиалы. Традиционно цукудани подают как приправу к простому отварному рису.</li></ol></div>
+                <div class="recipe-block"><div class="recipe-title">Мицури Канроджи</div><div class="recipe-sub">Сакура моти и данго</div><p><strong>Сакура моти:</strong></p><ol class="recipe-list"><li>Маринованные листья сакуры промойте и обсушите.</li><li>В сотейнике вскипятите воду. Снимите с огня, всыпьте рисовую муку и быстро перемешайте. Накройте крышкой и дайте постоять 5 минут.</li><li>Переложите тесто в миску и готовьте на пару 20 минут.</li><li>Горячее тесто переложите в миску. Добавьте сахар и разведенный краситель. Тщательно вымешивайте.</li><li>Влажными руками сформируйте из пасты анко шарики. Из рисового теста сделайте лепешки. В центр лепешки положите шарик анко и защипните края.</li><li>Каждый моти заверните в подготовленный лист сакуры.</li></ol><p><strong>Данго:</strong></p><ol class="recipe-list"><li>Смешайте рисовую муку с сахаром. Постепенно вливайте воду, замешивая мягкое, эластичное тесто.</li><li>Скатайте тесто в шарики. Приготовьте шарики на пару 10-15 минут.</li><li>Когда шарики немного остынут, нанижите их на деревянные шпажки.</li><li>Смешайте воду, соевый соус, сахар и крахмал. Поставьте на медленный огонь и варите до загустения.</li><li>Полейте готовые данго соусом и подавайте теплыми.</li></ol></div>
+                <div class="recipe-block"><div class="recipe-title">Обанай Игуро</div><div class="recipe-sub">Тороро комбу</div><p class="note">Тороро комбу — это не основное блюдо, а добавка или приправа. Её можно добавить к готовому рису, лапше и т.д.</p></div>
+                <div class="recipe-block"><div class="recipe-title">Гемей Химеджима</div><div class="recipe-sub">Такикоми-гохан</div><ol class="recipe-list"><li>Тщательно промойте рис в холодной воде, меняя воду несколько раз, пока она не станет прозрачной. Откиньте рис на сито и оставьте на 15–30 минут для просушки.</li><li>Нарежьте овощи и грибы мелкими кусочками примерно одного размера.</li><li>Обжарьте тофу абураагэ и промокните бумажным полотенцем, чтобы удалить лишнее масло, затем нарежьте соломкой. Так же обжарьте курицу.</li><li>Водоросль комбу и стружку тунца сварите в воде несколько минут и процедите бульон.</li><li>В мерном стакане смешайте готовый бульон, соевый соус, мирин, сакэ и соль.</li><li>В кастрюлю выложите рис и залейте его смесью бульона. Сверху на рис аккуратно выложите все остальные ингредиенты: овощи, грибы, тофу абураагэ, курицу. <strong>Важно: НЕ ПЕРЕМЕШИВАЙТЕ</strong>. Ингредиенты должны лежать слоем на рисе.</li><li>Накройте крышкой и включите средний огонь. Рис слегка подрумянивается снизу, образуя хрустящую корочку "окогэ".</li><li>Когда рис сварится, не открывайте крышку сразу. Дайте ему настояться под крышкой еще 10–15 минут.</li><li>Откройте крышку и аккуратно перемешайте содержимое лопаткой заворачивающими движениями. Подавайте горячим, украсив зеленым луком, кунжутом или свежим горошком.</li></ol></div>
+                <div class="recipe-block"><div class="recipe-title">Муичиро Токито</div><div class="recipe-sub">Отварной редис с соусом</div><ol class="recipe-list"><li>Тщательно вымойте редис.</li><li>Налейте в кастрюлю немного воды (примерно на 1-2 пальца), добавьте соль и чайную ложку сахара. Доведите до кипения. Положите редис (целиком или крупные экземпляры можно разрезать пополам) и варите на среднем огне 7-8 минут.</li><li>Откиньте готовый редис на дуршлаг, дайте воде стечь. Переложите в блюдо, полейте растопленным сливочным маслом и обильно посыпьте мелко рубленым укропом.</li></ol></div>
+                <div class="recipe-block"><div class="recipe-title">Тенген Узуй</div><div class="recipe-sub">Фугу сашими</div><p class="note">Блюдо из рыбы фугу, требующее особой осторожности при приготовлении из-за содержания яда в органах рыбы.</p></div>
+                <div class="recipe-block"><div class="recipe-title">Санеми Шинадзугава</div><div class="recipe-sub">Охаги</div><ol class="recipe-list"><li>Сварите клейкий рис и разомните его в ступке до полуоднородной массы.</li><li>Сформируйте из риса лепешки, в центр положите пасту анко.</li><li>Обваляйте в кунжуте или рисовой муке.</li></ol></div>`;
+            } else if (pageId === 'cooking' && subKey === 'snacks') {
+                html = `<h4>Закуски и легкие блюда</h4><div class="recipe-block"><div class="recipe-title">Онигири</div><ol class="recipe-list"><li>Сварите короткозерный рис. Готовый рис немного остудите.</li><li>Смочите ладони водой и слегка посолите их. Возьмите горсть риса, в центр положите начинку, накройте второй порцией риса.</li><li>Аккуратно сожмите рис в ладонях, формируя треугольник или шар.</li><li>Положите на них полоску нори.</li></ol></div><div class="recipe-block"><div class="recipe-title">Жареный тофу</div><ol class="recipe-list"><li>Тофу заверните в чистую льняную салфетку и положите под груз на 20 минут. Нарежьте пластинами.</li><li>На сковороде разогрейте кунжутное масло. Выложите тофу и жарьте по 3-4 минуты с каждой стороны до хрустящей корочки.</li><li>Снимите с огня, сбрызните соевым соусом и посыпьте зеленым луком.</li></ol></div><div class="recipe-block"><div class="recipe-title">Тайяки</div><ol class="recipe-list"><li>Смешайте муку, соль, сахар, разрыхлитель. В отдельной миске взбейте яйцо с молоком. Соедините жидкую и сухую смеси. Уберите тесто в холодное место на 30–60 минут.</li><li>Разогрейте форму для тайяки на среднем огне, смажьте маслом.</li><li>Налейте тесто в формы, заполняя их примерно наполовину.</li><li>Выложите начинку в центр.</li><li>Залейте начинку сверху ещё небольшим количеством теста.</li><li>Закройте форму и сразу переверните её.</li><li>Жарьте по 3-5 минут с каждой стороны до золотистого цвета.</li></ol></div>`;
+            } else if (pageId === 'cooking' && subKey === 'soups') {
+                html = `<h4>Супы и похлебки</h4><div class="recipe-block"><div class="recipe-title">Мисо-суп (традиционный)</div><p><strong>Ингредиенты:</strong> Вода 500 мл, Даси 1 ч.л., Паста мисо 1.5–2 ст.л., Тофу 100 г, Вакамэ 1 ст.л., Лук зеленый.</p><ol class="recipe-list"><li>Нарежьте тофу кубиками. Лук измельчите.</li><li>Налейте воду в кастрюлю и доведите до кипения. Добавьте Даси, перемешайте. Убавьте огонь.</li><li>Положите в бульон тофу и водоросли Вакамэ. Прогревайте на слабом огне 1–2 минуты.</li><li>Налейте немного горячего бульона в отдельную миску. Положите в этот бульон пасту мисо и тщательно размешайте. Вылейте разведенную пасту обратно в кастрюлю. Перемешайте.</li><li>Сразу выключите огонь. Разлейте суп по пиалам. Посыпьте сверху зеленым луком.</li></ol></div><div class="recipe-block"><div class="recipe-title">Лапша удон в бульоне</div><p><strong>Ингредиенты:</strong> Лапша Удон 100 г, Вода 500 мл, Соевый соус 1–2 ст.л., Тофу 50 г, Зеленый лук, Нори.</p><ol class="recipe-list"><li>Вскипятите воду в большой кастрюле. Отварите лапшу удон согласно инструкции. Откиньте лапшу на дуршлаг, промойте холодной водой.</li><li>В отдельной кастрюле вскипятите 500 мл воды. Добавьте основу для бульона: 2 ст.л. соевого соуса, 1 ч.л. Даси, 1 ст.л. мирина. Если добавляете тофу, нарежьте его кубиком и положите в бульон. Прогрейте 2 минуты.</li><li>Прогретую лапшу удон положите в глубокую суповую миску. Залейте лапшу горячим бульоном с тофу.</li><li>Мелко нарежьте зеленый лук. Разломайте руками маленький кусочек нори. Посыпьте суп луком и водорослями нори сверху. Сразу подавайте.</li></ol></div>`;
+            } else if (pageId === 'cooking' && subKey === 'sweets') {
+                html = `<h4>Сладости</h4><div class="recipe-block"><div class="recipe-title">Данго</div><p><strong>Ингредиенты:</strong> Рисовая мука 100 г, Вода 80-90 мл, Соевый соус 2 ст.л., Сахар 2 ст.л., Мирин 1 ст.л., Крахмал 1 ч.л.</p><ol class="recipe-list"><li>В миску насыпьте рисовую муку. Постепенно вливайте теплую воду, перемешивая рукой.</li><li>Разделите тесто на 8 равных частей. Скатайте из каждой влажными руками гладкие шарики.</li><li>Вскипятите воду в кастрюле. Опустите шарики и варите, пока они не всплывут. После всплытия варите еще 2-3 минуты.</li><li>Выловите шарики шумовкой и сразу переложите в миску с ледяной водой на 1 минуту.</li><li>Достаньте шарики, обсушите бумажным полотенцем и нанижите по 3-4 штуки на шпажку.</li><li>Смешайте в маленькой кастрюльке соевый соус, сахар, мирин и воду. Доведите до кипения. Влейте разведенный крахмал и, постоянно помешивая, варите до загустения.</li><li>Полейте шарики соусом или обмакните их в него.</li></ol></div><div class="recipe-block"><div class="recipe-title">Классический дайфуку с анко</div><p><strong>Ингредиенты:</strong> Рисовая мука 100 г, Вода 80-100 мл, Сахар 2-3 ст.л., Крахмал, Анко 150-200 г.</p><ol class="recipe-list"><li>Разделите анко на 8–10 равных частей. Скатайте из каждой шарик. Уберите в холодильник.</li><li>В миску насыпьте рисовую муку и сахар, перемешайте. Постепенно влейте воду, тщательно размешивая.</li><li>Накройте миску пищевой пленкой. Поставьте в микроволновку на 1–2 минуты при мощности 600–700 Вт.</li><li>Достаньте, перемешайте влажной силиконовой лопаткой. Если остались мучнистые участки, поставьте ещё на 30–60 секунд.</li><li>Обильно присыпьте рабочую поверхность крахмалом. Выложите горячее тесто на крахмал. Обваляйте тесто в крахмале и слегка вымесите его.</li><li>Разрежьте тесто на 8–10 равных частей.</li><li>Возьмите один кусочек теста, обваляйте в крахмале. Раскатайте его в тонкий кружок диаметром примерно 8–10 см.</li><li>На центр положите шарик начинки. Аккуратно поднимите края теста и защипните их сверху, как мешочек.</li><li>Переложите готовый дайфуку на тарелку, присыпанную крахмалом.</li></ol></div>`;
+            } else if (pageId === 'cooking' && subKey === 'drinks') {
+                html = `<h4>Напитки</h4><div class="recipe-block"><div class="recipe-title">Зеленый чай (правильное заваривание)</div><p><strong>Сенча:</strong> Температура воды: 70–80°C. Пропорции: 1 ч. ложка заварки на 150–200 мл воды. Заваривание: Прогрейте заварочный чайник и чашки горячей водой. Насыпьте заварку в чайник. Залейте водой нужной температуры. Настаивайте 1–1.5 минуты.</p><p><strong>Матча:</strong> Взбейте 1–2 ч. ложки порошка матча с 70 мл воды (80°C) специальным венчиком (часэн) до образования пенки.</p></div><div class="recipe-block"><div class="recipe-title">Сливовое вино (Умэсю)</div><p><strong>Ингредиенты:</strong> Зеленые сливы 500 г, Сахар 250–500 г, Алкоголь 900 мл – 1 л.</p><ol class="recipe-list"><li>Тщательно вымойте сливы. Обязательно удалите плодоножки острой зубочисткой. Замочите сливы в воде на 2-3 часа. Обсушите сливы полностью бумажными полотенцами.</li><li>Простерилизуйте банку и крышку. На дно банки насыпьте слой сахара, затем слой слив, чередуя, пока ингредиенты не закончатся. Верхним слоем должен быть сахар.</li><li>Залейте содержимое алкоголем так, чтобы он полностью покрывал сливы и сахар.</li><li>Закройте банку крышкой, уберите в темное прохладное место. Первый месяц раз в неделю аккуратно встряхивайте банку.</li><li>Минимально — 3 месяца. Но настоящее умэсю раскрывается через 6–12 месяцев.</li><li>Через полгода можно слить настойку в бутылки. Подавать охлажденным, со льдом.</li></ol></div>`;
+            } else if (pageId === 'medicine' && subKey === 'ointments') {
+                html = `<h4>Мази</h4><div class="recipe-block"><div class="recipe-title">Мазь из луковиц лилии и масла камелии (Ямаюри-но ко)</div><p>Используется при ожогах и ранах. Луковицы дикой лилии натирают на терке, смешивают с теплым маслом камелии и добавляют немного воска для густоты. Накладывают толстым слоем под повязку и меняют дважды в день.</p></div><div class="recipe-block"><div class="recipe-title">Ранозаживляющая мазь с соком подорожника и мёдом (Гаппа-ко)</div><p>Самое ходовое средство в отрядах истребителей для лечения глубоких порезов и укусов демонов. Свежие листья подорожника и горца перетирают до появления сока, смешивают с густым мёдом и порошком сушеной коры клюквы. Наносят сразу после боя.</p></div><div class="recipe-block"><div class="recipe-title">Экстренное средство: Мазь-антидот из угля и корня лопуха (Мокутан-конбу)</div><p>Смешивают толченый древесный уголь с соком корня лопуха и рисовым уксусом. Эту кашицу прикладывают к ране на час, чтобы она вытянула яд наружу.</p></div><div class="recipe-block"><div class="recipe-title">Согревающая мазь с имбирем и горчицей (Сёга-караши-дзай)</div><p>Применяется при обморожениях. Свежий имбирь и семена горчицы толкут в пасту, добавляют растопленный барсучий жир и несколько капель эфирного масла хиноки.</p></div>`;
+            } else if (pageId === 'medicine' && subKey === 'tinctures') {
+                html = `<h4>Настойки</h4><div class="recipe-block"><div class="recipe-title">Кровоостанавливающая настойка на водяном перце (Янаги-тадэ)</div><p>Свежие листья и стебли водяного перца настаивают на рисовом сакэ в течение двадцати дней, затем процеживают. Принимают внутрь по несколько капель, разбавляя теплой водой.</p></div><div class="recipe-block"><div class="recipe-title">Согревающая настойка из женьшеня и имбиря (Ниндзин-сёга-сю)</div><p>Корень женьшеня и тонко нарезанный имбирь заливают крепким рисовым самогоном, добавляют немного меда и настаивают в теплом месте не меньше месяца.</p></div><div class="recipe-block"><div class="recipe-title">Обезболивающая настойка из коры ивы и мака (Янаги-кэси-гай)</div><p>Кору белой ивы и высушенные головки мака настаивают на спирту, затем добавляют несколько капель настоя корня валерианы. Это сильнодействующее средство.</p></div><div class="recipe-block"><div class="recipe-title">Экстренное средство: Настойка-противоядие из пяти кореньев (Гокон-тога)</div><p>Корень аконита, корень лопуха, корень пиона, корень солодки и корень копытня настаивают на уксусе и сакэ в равных долях в течение ста дней.</p></div><div class="recipe-block"><div class="recipe-title">Энергетическая настойка: Настойка на сливе и красных ягодах (Умэ-куми-сю)</div><p>Незрелые сливы умэбоси и ягоды годжи настаивают на меду и сладком сакэ в течение года. Принимают по одной ложке утром и вечером.</p></div>`;
+            } else if (pageId === 'medicine' && subKey === 'decoctions') {
+                html = `<h4>Отвары</h4><div class="recipe-block"><div class="recipe-title">Жаропонижающий отвар из корня лопуха и хризантемы (Гобо-кику-то)</div><p>Свежий корень лопуха тонко нарезают, лепестки дикой хризантемы высушивают и варят вместе в глиняном горшке на медленном огне до тех пор, пока вода не станет золотистой. Пьют горячим перед сном.</p></div><div class="recipe-block"><div class="recipe-title">Восстанавливающий отвар из риса и фасоли адзуки (Окаю-адзуки)</div><p>Рис и красную фасоль адзуки варят в большом количестве воды до полного разваривания, затем процеживают через ткань. Дают пить теплым каждые два часа.</p></div><div class="recipe-block"><div class="recipe-title">Успокаивающий отвар из пиона и солодки (Шакуяку-канзо-то)</div><p>Корень пиона и корень солодки варят вместе, пока отвар не уменьшится в объеме на треть. Он снимает спазмы, расслабляет мышцы и успокаивает дух.</p></div><div class="recipe-block"><div class="recipe-title">Экстренное средство: Отвар-противоядие из трех листьев (Санъё-доку-кэси)</div><p>Берут свежие листья подорожника, листья горца и молодые побеги бамбука, заливают водой и кипятят, пока вода не станет темно-зеленой. Пьют небольшими глотками в течение дня.</p></div><div class="recipe-block"><div class="recipe-title">Отвар для легких: Отвар из хурмы и груши (Каки-наси-то)</div><p>Сушеную хурму и свежую грушу нарезают мелкими кусочками, заливают водой и варят до мягкости. Затем фрукты разминают прямо в отваре и дают выпить теплым.</p></div>`;
+            } else if (pageId === 'medicine' && subKey === 'poisons') {
+                html = `<h4>Яды и противоядия</h4><div class="recipe-block"><div class="recipe-title">Концентрированный экстракт глицинии (Фудзи-доку)</div><p>Это основа клинков и отравленных снарядов Истребителей. Глициния смертельна для демонов.</p><p><strong>Что нужно для создания:</strong> Лепестки и кору глицинии вымачивают в рисовом уксусе в течение нескольких лунных циклов. Полученную жижу перегоняют через медные трубки.</p><p><strong>Применение:</strong> Им пропитывают сталь клинков или вводят прямо в тело демона через специальные полые иглы.</p></div><div class="recipe-block"><div class="recipe-title">Порошок сушеной глицинии</div><p>Используется для создания ловушек и засад.</p><p><strong>Что нужно для создания:</strong> Цветы глицинии сушат в полной темноте, перетирают в пыль и смешивают с толчеными костями угря.</p><p><strong>Применение:</strong> Распыляется в воздухе. При вдохе демоном поражает легкие и замедляет регенерацию на несколько минут.</p></div><div class="recipe-block"><div class="recipe-title">Корень аконита (Торикабуто) в смеси с медным купоросом</div><p>Аконит сам по себе вызывает паралич нервной системы у людей, а для демонов он блокирует сигналы мозга к регенерации конечностей. Медь не дает ране затягиваться.</p><p><strong>Что нужно для создания:</strong> Корень аконита варят в сакэ до выпаривания алкоголя, затем добавляют стружку меди и настаивают в глиняном горшке, закопанном в землю, 50 дней.</p><p><strong>Применение:</strong> Наносится на зазубрины клинка. При попадании в кровь демон чувствует, будто его конечности налились свинцом.</p></div><div class="recipe-block"><div class="recipe-title">Ядовитая слюна сороконожки (Мукадэ) с порошком жгучего перца</div><p>Основан на страхе перед сороконожками в японском фольклоре.</p><p><strong>Что нужно для создания:</strong> Гигантских сороконожек заставляют кусать кусок сырой говядины, пропитывая его ядом. Затем мясо сжигают, а золу смешивают с жгучим перцем.</p><p><strong>Применение:</strong> Этот состав вызывает у демонов нестерпимый зуд и жжение на месте раны.</p></div>`;
+            } else if (pageId === 'bombs' && subKey === 'tears') {
+                html = `<h4>Слёзы глицинии</h4><p><strong>Тип:</strong> ослепляющий порошок<br><strong>Применение:</strong> бросается в лицо демону.</p><p><strong>Эффект:</strong> порошок попадает в глаза, вызывает сильное жжение, временно ослепляет демона, замедляет регенерацию глаз. Действие: 10–30 секунд.</p><h5>Ингредиенты</h5><ul><li>высушенные лепестки глицинии</li><li>порошок горького ириса</li><li>зола белой сосновой коры</li><li>мелко перемолотая соль</li></ul><h5>Изготовление</h5><p>Высушить лепестки глицинии в тени. Перемолоть их в очень мелкий порошок. Смешать с золой и ирисом. Хранить смесь в тонкой бумажной капсуле, которая разрывается при броске.</p>`;
+            } else if (pageId === 'bombs' && subKey === 'withering') {
+                html = `<h4>Дыхание увядания</h4><p><strong>Тип:</strong> газовая бомба<br><strong>Применение:</strong> бросается под ноги демону.</p><p><strong>Эффект:</strong> дым попадает в дыхательные пути, вызывает кашель, спазм дыхания, ослабление демона. Действие: 20–40 секунд.</p><h5>Ингредиенты</h5><ul><li>концентрат глицинии</li><li>порошок сушёной полыни</li><li>ферментированный цветочный спирт</li><li>древесная смола</li></ul><h5>Изготовление</h5><p>Приготовить настой глицинии. Смешать его со смолой. Добавить порошок полыни. Поместить смесь в глиняную капсулу, которая при ударе выпускает ядовитый дым.</p>`;
+            } else if (pageId === 'bombs' && subKey === 'nightpoison') {
+                html = `<h4>Яд цветущей ночи</h4><p><strong>Тип:</strong> жидкая бомба<br><strong>Применение:</strong> разбивается о кожу демона.</p><p><strong>Эффект:</strong> жидкость впитывается в рану или кожу, вызывает замедление движений, слабость конечностей, частичный паралич. Действие: 1–2 минуты.</p><h5>Ингредиенты</h5><ul><li>концентрированная эссенция глицинии</li><li>сок горькой камелии</li><li>порошок белых грибов</li><li>капля ферментированного нектара</li></ul><h5>Изготовление</h5><p>Сварить концентрат глицинии. Добавить камелию и грибной порошок. Настоять сутки. Разлить в тонкие стеклянные ампулы, которые разбиваются при броске.</p>`;
+            } else if (pageId === 'bombs' && subKey === 'lullaby') {
+                html = `<h4>Колыбельная бабочки</h4><p><strong>Тип:</strong> усыпляющий порошок<br><strong>Применение:</strong> распыляется рядом с демоном.</p><p><strong>Эффект:</strong> замедляет реакции, вызывает сильную сонливость, снижает агрессию демона. Действие: 30–60 секунд.</p><h5>Ингредиенты</h5><ul><li>пыльца глицинии</li><li>порошок лаванды</li><li>экстракт белого мака</li><li>измельчённые семена лотоса</li></ul><h5>Изготовление</h5><p>Высушить пыльцу глицинии. Смешать её с лавандой и маком. Растереть до лёгкой пудры. Хранить в тонких бумажных шариках.</p>`;
+            } else if (pageId === 'kakushi' && subKey === 'dresscode') {
+                html = `<h4>Дресс-код</h4><p>Свободная форма одежды, но с уважением к окружающим — не пересекай рамки приличия.</p><p><strong>Выбор цвета кимоно (BodyGroups):</strong></p><ul><li>0 - камень</li><li>1 - пламя</li><li>2 - насекомое</li><li>3 - туман</li><li>4 - гром</li><li>5 - туман</li><li>6 - вода</li><li>7 - змея</li><li>8 - любовь</li><li>9 - ветер</li></ul>`;
+            } else if (pageId === 'kakushi' && subKey === 'promotion') {
+                html = `<h4>Система повышения Какуши</h4><div class="recipe-block"><div class="recipe-title">Мидзуното -> Мидзуное</div><ol class="recipe-list"><li>Приготовить сухпайки для отбора</li><li>Осмотреть учеников перед отбором</li></ol></div><div class="recipe-block"><div class="recipe-title">Мидзуное -> Каното</div><ol class="recipe-list"><li>Сшить форму истребителю</li><li>Сходить с группой истребителей на вылазку, обеспечив им мед.помощь в случае чего</li></ol></div><div class="recipe-block"><div class="recipe-title">Каното -> Каноэ</div><ol class="recipe-list"><li>Провести полное медицинское обследование любому истребителю</li><li>Создать мед.карту любому истребителю</li></ol></div><div class="recipe-block"><div class="recipe-title">Каноэ -> Тсучиното</div><ol class="recipe-list"><li>Приготовить отвары и настойки</li><li>Приготовить еду любому столпу</li><li>Прослушать лекцию про яды у Шинобу Кочо/ССП</li><li>Пополнить запасы трав на складе</li></ol></div><div class="recipe-block"><div class="recipe-title">Тсучиното -> Тсучиноэ</div><ol class="recipe-list"><li>Ассистировать в операции</li><li>Приготовить еду любым 3 истребителям</li><li>Послушать лекцию о ПМП от Шинобу Кочо/Заместители/ССП/Аой</li><li>Сдать экзамен на знание ядов у Шинобу Кочо</li></ol></div><div class="recipe-block"><div class="recipe-title">Тсучиноэ -> Хиното</div><ol class="recipe-list"><li>Провести полное медицинское обследование столпу</li><li>Подлотать хаори любому столпу</li><li>Сдать экзамен о знаний ПМП у Шинобу Кочо/Заместителей/ССП/Аой</li><li>Прослушать лекцию про ожоги у Шинобу Кочо/Заместителей/ССП/Аой</li></ol></div><div class="recipe-block"><div class="recipe-title">Хиното -> Хиноэ</div><ol class="recipe-list"><li>Сшить хаори любым 5 истребителям</li><li>Сдать экзамен на знание медицинских инструментов у Шинобу Кочо/Заместителей/ССП/Аой</li><li>Прослушать лекцию про переломы у Шинобу кочо/Заместителей/ССП/Аой</li><li>Получить одобрение на повышение от Канао и Аой</li><li>Прослушать лекцию от старшего хирурга</li></ol></div><div class="recipe-block"><div class="recipe-title">Хиноэ -> Киното</div><ol class="recipe-list"><li>Оказать мед.помощь истребителю, который был ранен высшей луной</li><li>Создать мед.карту 3 истребителям</li><li>Пройти экзамен у старшего хирурга</li><li>Прослушать лекцию от фармацевта</li><li>Пройти экзамен у фармацевта</li></ol></div><div class="recipe-block"><div class="recipe-title">Киното -> Киноэ</div><ol class="recipe-list"><li>Пройти экзаминацию по готовке у Мицури</li><li>Провести любую операцию</li><li>Создать 10 мед.карт истребителям</li><li>Провести полный мед.осмотр всем столпам</li><li>Получить одобрение на повышение у Мицури и Столпа света</li><li>Получить одобрение на повышение от семьи Убуяшики</li></ol></div><p class="note"><strong>Важно:</strong> Экзамены и лекции обязательны и их невозможно пропустить с помощью рекомендации.</p>`;
+            } else if (pageId === 'kakushi' && subKey === 'atarashi') {
+                html = `<h4>Атараши</h4><p>Атараши - чистильщики и отряд быстрого реагирования, в котором участвует любой истребитель из любого дыхания, участник отряда имеет право лечить истребителей в лазарете и находится во всех помещениях поместья бабочки (искл. жилые комнаты).</p>`;
+            } else if (pageId === 'gunshinrib' && subKey === 'general') {
+                html = `<h4>Общее понятие</h4><p><strong>Отдел военно-психологической поддержки "Гуншинрибу"</strong></p><p>Психология — это наука, изучающая закономерности возникновения, развития и функционирования психики, сознания и поведения человека.</p><h5>Должности внутри отдела:</h5><p><strong>Клинический военный психолог:</strong> Специализируется на работе с боевыми травмами, ПТСР и реабилитации. (Для поступления на должность требуется 2 форма допуска секретности)</p><p><em>Обязанности:</em></p><ul><li>Психологическая помощь истребителям после травмирующих событий.</li><li>Проверять учеников после прохождения финального отбора на предмет когнитивных нарушений и ПТСР.</li><li>Дежурство на территории поместья бабочки.</li></ul><p><strong>Оперативный психолог:</strong> Обеспечивает психологическую поддержку непосредственно во время боевых действий или учений. (Для поступления на должность требуется 1 форма допуска секретности)</p><p><em>Обязанности:</em></p><ul><li>Непосредственное поддержание боевого духа во время общих событий.</li><li>Контроль за поведением внутри коллектива.</li><li>Направлять девиантных истребителей на обследование к клиническому военному психологу.</li><li>Не допускать разлад внутри корпуса и помогать решать конфликтные ситуации.</li></ul>`;
+            } else if (pageId === 'gunshinrib' && subKey === 'duty') {
+                html = `<h4>Дежурство психологов</h4><p>Дежурный психолог назначается из числа клинических военных психологов и, как исключение, из наиболее подготовленных оперативных психологов. Он отвечает за психологическое состояние других работников поместья; за обращения постояльцев; за чистоту на месте дежурства, а также за добросовестность других сотрудников отдела.</p><h5>Обязанности:</h5><ul><li>Контроль состава психологов.</li><li>Контроль психологического состояния работников поместья.</li><li>Помощь нуждающимся в поддержке.</li><li>Пресечение угнетения каких-либо членов организации.</li><li>Содержание в чистоте территории несения дежурства.</li><li>При расквартировании отряда на территории задания также следить за состоянием истребителей.</li></ul>`;
+            } else if (pageId === 'gunshinrib' && subKey === 'cognitive') {
+                html = `<h4>Когнитивные нарушения</h4><p>Когнитивные нарушения — это снижение памяти, внимания, речи или мышления, классифицируемые по степени тяжести (легкие, умеренные, деменция), этиологии (первичные нейродегенеративные или вторичные сосудистые/метаболические) и характеру нарушений (амнестические или неамнестические).</p><h5>Классификация по степени тяжести:</h5><ul><li><strong>Легкие когнитивные нарушения (ЛКН):</strong> Субъективные жалобы (забывчивость, рассеянность), подтверждаемые тестами, но не влияющие на повседневную жизнь.</li><li><strong>Умеренные когнитивные нарушения (УКН):</strong> Объективное снижение функций, заметное окружению, осложняющее выполнение сложных привычных задач (работа, быт), но без зависимости от посторонней помощи.</li><li><strong>Тяжелые нарушения (деменция):</strong> Глубокий дефицит, требующий постоянного постороннего ухода; полная утрата самостоятельности, дезориентация.</li></ul><h5>Классификация по этиологии (причинам):</h5><ul><li><strong>Первичные:</strong> Обусловлены нейродегенеративными заболеваниями (болезнь Альцгеймера, деменция с тельцами Леви).</li><li><strong>Вторичные:</strong> Следствие сосудистых заболеваний (инсульт, дисциркуляторная энцефалопатия), травм, дефицита витаминов (В1, В12), эндокринных нарушений (гипотиреоз), инфекций или интоксикаций.</li></ul>`;
+            } else if (pageId === 'gunshinrib' && subKey === 'ptsd') {
+                html = `<h4>Посттравматическое стрессовое расстройство (ПТСР)</h4><p>ПТСР — это тяжелое психическое состояние, возникающее после переживания угрожающих жизни событий (война, насилие, катастрофы). Основные симптомы включают флешбэки (навязчивые воспоминания), ночные кошмары, избегание триггеров и высокую тревожность.</p><h5>Основные симптомы ПТСР:</h5><ul><li><strong>Переживание травмы:</strong> Навязчивые мысли, кошмары, флешбэки.</li><li><strong>Избегание:</strong> Попытки избежать мыслей, мест, разговоров, напоминающих о травме.</li><li><strong>Гипервозбудимость:</strong> Постоянное напряжение, раздражительность, вспышки гнева, вздрагивание от звуков.</li><li><strong>Эмоциональные изменения:</strong> Эмоциональное оцепенение, потеря интереса к жизни, чувство вины, отстраненность.</li><li><strong>Физические проявления:</strong> Бессонница, панические атаки, боли в теле.</li></ul><h5>Причины и факторы риска:</h5><p>ПТСР развивается, если психика не справляется с экстремальным стрессом. Причинами могут быть: военные действия, физическое/сексуальное насилие, террористические акты, аварии, природные катастрофы или смерть близкого человека.</p><h5>Виды ПТСР по времени появления:</h5><ul><li><strong>Острое:</strong> Симптомы длятся от 1 до 3 месяцев.</li><li><strong>Хроническое:</strong> Симптомы наблюдаются более 3 месяцев.</li><li><strong>Отсроченное:</strong> Симптомы появляются спустя 6 месяцев и более после события.</li><li><strong>Комплексное (КПТСР):</strong> Развивается после длительных, повторяющихся травм.</li></ul><h5>Диагностика и лечение:</h5><p>Диагноз ставит врач-психиатр или психотерапевт.</p><ul><li><strong>Психотерапия:</strong> Когнитивно-поведенческая терапия (КПТ), EMDR-терапия.</li><li><strong>Медикаментозное лечение:</strong> Антидепрессанты для снижения тревоги и депрессии.</li></ul>`;
+            } else if (pageId === 'gunshinrib' && subKey === 'operative') {
+                html = `<h4>Этика оперативного психолога</h4><ol class="recipe-list"><li><strong>Принцип "не навреди":</strong> психолог действует в интересах истребителя.</li><li><strong>Принцип "соблюдения конфиденциальности":</strong> психолог не имеет права разглашать сведения третьим лицам.</li><li><strong>Принцип уважения:</strong> запрет на проявлении в работе чувства превосходства.</li><li><strong>Принцип объективности:</strong> непредвзятое отношение, основанное на реальных данных.</li><li><strong>Соблюдение профессиональной этики:</strong> соблюдать осторожность в применении эмоций.</li><li><strong>Принцип безопасности применяемых методик:</strong> психолог применяет только такие методики, которые не являются опасными для здоровья.</li><li><strong>Принцип беспристрастности психолога:</strong> недопустимо предвзятое отношение к испытуемому.</li><li><strong>Принцип адекватности методик:</strong> применяемые методики должны быть адекватны целям исследования.</li></ol>`;
+            } else if (pageId === 'gunshinrib' && subKey === 'clinical') {
+                html = `<h4>Этика клинического военного психолога</h4><ol class="recipe-list"><li><strong>Принцип "не навреди":</strong> психолог действует в интересах истребителя.</li><li><strong>Принцип "соблюдения конфиденциальности":</strong> психолог не имеет права разглашать сведения третьим лицам.</li><li><strong>Принцип уважения:</strong> запрет на проявлении в работе чувства превосходства.</li><li><strong>Принцип объективности:</strong> непредвзятое отношение, основанное на реальных данных.</li><li><strong>Соблюдение профессиональной этики:</strong> соблюдать осторожность в применении эмоций.</li><li><strong>Принцип безопасности применяемых методик:</strong> психолог применяет только такие методики, которые не являются опасными для здоровья.</li><li><strong>Принцип беспристрастности психолога:</strong> недопустимо предвзятое отношение к испытуемому.</li><li><strong>Принцип адекватности методик:</strong> применяемые методики должны быть адекватны целям исследования.</li></ol>`;
+            } else if (pageId === 'gunshinrib' && subKey === 'security') {
+                html = `<h4>Формы допуска секретности</h4><p>Существуют три формы допуска секретности:</p><ul><li><strong>1 форма допуска секретности:</strong> является стандартным доступом к документам поместья.</li><li><strong>2 форма допуска секретности:</strong> открывает доступ к личным данным истребителей (анамнезы, документы с характеристиками, эмоциональными реакциями и психологическими процессами).</li><li><strong>3 форма допуска секретности:</strong> открывает доступ к личным данным столпов и других важных стратегических лиц корпуса.</li></ul><h5>Ограничения и наказание за нарушение:</h5><ul><li><strong>1 форма:</strong> накладывает запрет на распространение информации. Наказание: ЧС поместья (срок в зависимости от тяжести нарушения), запрет на вступление в отдел с правом на амнистию.</li><li><strong>2 форма:</strong> накладывает запрет на распространение информации. Наказание: ЧС поместья от 2-ух месяцев до ПЕРМ, и дальнейший запрет на вступление в отдел без права амнистии.</li><li><strong>3 форма (Совершенно секретно):</strong> накладывает запрет на распространение информации. Полное сокрытие информации о взаимодействии с перечисленными лицами. Наказание: Суд столпов.</li></ul>`;
+            } else if (pageId === 'gunshinrib' && subKey === 'inspection') {
+                html = `<h4>Осмотр учеников после отбора</h4><p><strong>Порядок действий при осмотре ученика:</strong></p><ol class="recipe-list"><li>Собрать анамнез (жалобы, обращаем внимание на питание и сон).</li><li>Внешний осмотр во время общения (прямой зрительный контакт, язык тела, тремор и т.д.).</li><li>После определение диагноза (при его наличии), дать рекомендации (диета, привычки, упражнения), или направить ученика на медикаментозное лечение.</li></ol><p><strong>Как это будет происходить?</strong></p><p>Каждого из учеников, прошедших отбор, по одному вызывают в комнату на небольшую беседу, в ходе которой мы узнаем о состоянии и проблемах индивида (все жалобы и наблюдения идут под запись).</p>`;
+            }
+
+            contentDiv.innerHTML = html;
+        }
+
+        subpageConfigs.forEach(config => {
+            const tabsContainer = document.getElementById(config.tabsId);
+            if (!tabsContainer) return;
+            const tabs = tabsContainer.querySelectorAll('.subpage-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    updateSubpageContent(config.page, this.dataset.sub);
+                });
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            showSection('main');
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                if (btn.dataset.theme === currentTheme) btn.classList.add('active');
+                else btn.classList.remove('active');
+                btn.addEventListener('click', function() {
+                    const theme = this.dataset.theme;
+                    document.documentElement.setAttribute('data-theme', theme);
+                    localStorage.setItem('theme', theme);
+                    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.feature-card, .rank-card, .activity-item, .rule-card, .member-card').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                observer.observe(el);
+            });
+        });
+
+        class WebGLBackground {
+            constructor() {
+                this.canvas = document.getElementById('webgl-canvas');
+                this.gl = this.canvas.getContext('webgl');
+                this.particles = [];
+                this.mouse = { x: 0, y: 0 };
+                this.time = 0;
+                if (!this.gl) return;
+                this.init();
+                this.animate();
+                document.addEventListener('mousemove', (e) => {
+                    this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                });
+            }
+            init() {
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                this.createShaders();
+                this.createBuffers();
+                this.createParticles();
+            }
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            }
+            createShaders() {
+                const vsSource = `attribute vec2 aPosition; attribute float aSize; attribute vec3 aColor; attribute float aAlpha; uniform float uTime; uniform vec2 uMouse; uniform vec2 uResolution; varying vec3 vColor; varying float vAlpha; void main() { float moveX = sin(uTime * 0.5 + aPosition.x) * 0.1; float moveY = cos(uTime * 0.3 + aPosition.y) * 0.1; float mouseDist = distance(aPosition, uMouse); float mouseInfluence = 0.2 * (1.0 - smoothstep(0.0, 0.5, mouseDist)); vec2 position = aPosition + vec2(moveX, moveY) + uMouse * mouseInfluence; vec2 normalized = position / uResolution * 2.0 - 1.0; gl_Position = vec4(normalized.x, normalized.y, 0.0, 1.0); float pulse = sin(uTime * 2.0 + aPosition.x + aPosition.y) * 0.2 + 0.8; gl_PointSize = aSize * pulse; vColor = aColor; vAlpha = aAlpha; }`;
+                const fsSource = `precision mediump float; varying vec3 vColor; varying float vAlpha; void main() { float dist = length(gl_PointCoord - vec2(0.5)); if (dist > 0.5) discard; float alpha = vAlpha * (1.0 - smoothstep(0.3, 0.5, dist)); gl_FragColor = vec4(vColor, alpha); }`;
+                const vertexShader = this.createShader(this.gl.VERTEX_SHADER, vsSource);
+                const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, fsSource);
+                this.program = this.gl.createProgram();
+                this.gl.attachShader(this.program, vertexShader);
+                this.gl.attachShader(this.program, fragmentShader);
+                this.gl.linkProgram(this.program);
+                this.gl.useProgram(this.program);
+                this.aPosition = this.gl.getAttribLocation(this.program, 'aPosition');
+                this.aSize = this.gl.getAttribLocation(this.program, 'aSize');
+                this.aColor = this.gl.getAttribLocation(this.program, 'aColor');
+                this.aAlpha = this.gl.getAttribLocation(this.program, 'aAlpha');
+                this.uTime = this.gl.getUniformLocation(this.program, 'uTime');
+                this.uMouse = this.gl.getUniformLocation(this.program, 'uMouse');
+                this.uResolution = this.gl.getUniformLocation(this.program, 'uResolution');
+            }
+            createShader(type, source) {
+                const shader = this.gl.createShader(type);
+                this.gl.shaderSource(shader, source);
+                this.gl.compileShader(shader);
+                return shader;
+            }
+            createBuffers() {
+                this.positionBuffer = this.gl.createBuffer();
+                this.sizeBuffer = this.gl.createBuffer();
+                this.colorBuffer = this.gl.createBuffer();
+                this.alphaBuffer = this.gl.createBuffer();
+            }
+            createParticles() {
+                const particleCount = 500;
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        size: Math.random() * 3 + 1,
+                        color: [ Math.random() * 0.4 + 0.4, Math.random() * 0.2 + 0.1, Math.random() * 0.3 + 0.3 ],
+                        alpha: Math.random() * 0.3 + 0.1,
+                        speedX: (Math.random() - 0.5) * 0.5,
+                        speedY: (Math.random() - 0.5) * 0.5
+                    });
+                }
+            }
+            updateParticles() {
+                this.particles.forEach(p => {
+                    p.x += p.speedX;
+                    p.y += p.speedY;
+                    if (p.x < 0) p.x = this.canvas.width;
+                    if (p.x > this.canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = this.canvas.height;
+                    if (p.y > this.canvas.height) p.y = 0;
+                });
+            }
+            render() {
+                this.gl.clearColor(0.0, 0.0, 0.0, 0.0);
+                this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+                this.gl.uniform1f(this.uTime, this.time);
+                this.gl.uniform2f(this.uMouse, this.mouse.x, this.mouse.y);
+                this.gl.uniform2f(this.uResolution, this.canvas.width, this.canvas.height);
+                const positions = [], sizes = [], colors = [], alphas = [];
+                this.particles.forEach(p => {
+                    positions.push(p.x, p.y);
+                    sizes.push(p.size);
+                    colors.push(...p.color);
+                    alphas.push(p.alpha);
+                });
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
+                this.gl.enableVertexAttribArray(this.aPosition);
+                this.gl.vertexAttribPointer(this.aPosition, 2, this.gl.FLOAT, false, 0, 0);
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.sizeBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(sizes), this.gl.STATIC_DRAW);
+                this.gl.enableVertexAttribArray(this.aSize);
+                this.gl.vertexAttribPointer(this.aSize, 1, this.gl.FLOAT, false, 0, 0);
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(colors), this.gl.STATIC_DRAW);
+                this.gl.enableVertexAttribArray(this.aColor);
+                this.gl.vertexAttribPointer(this.aColor, 3, this.gl.FLOAT, false, 0, 0);
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.alphaBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(alphas), this.gl.STATIC_DRAW);
+                this.gl.enableVertexAttribArray(this.aAlpha);
+                this.gl.vertexAttribPointer(this.aAlpha, 1, this.gl.FLOAT, false, 0, 0);
+                this.gl.drawArrays(this.gl.POINTS, 0, this.particles.length);
+            }
+            animate() {
+                this.time += 0.01;
+                this.updateParticles();
+                this.render();
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+        window.addEventListener('load', () => { new WebGLBackground(); });
+    </script>
+</body>
+</html>
